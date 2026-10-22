@@ -123,6 +123,31 @@ MaaEnd requires a 16:9 screen that scales to 1280x720, so the run forces
 1920x1080, and screencap returns 1920x1080. Every run must call `wm size reset` on exit,
 including on failure.
 
+**Screens found (first capture, 2026-10-22):**
+- Main menu (HUD top right) has 行動手冊, 通行證, 貴重品庫, 好友, 編隊 and more. 理智 shows
+  as 135/360. The HUD has a direct 行動手冊 icon.
+- 貴重品庫 → 武器 tab (981/2000). A 5-column grid, sorted by 品質 descending. The side panel
+  shows name, type, rarity, the etched essence name, the 3 attributes with levels (e.g.
+  智識提升·大 9/9), and who has it equipped. This screen is the weapon scan source.
+- Weapon 詳情 → 基質 slot → 活性化 page shows the etched essence's 3 attributes with levels
+  (+6/+6/+3), origin region, and a **卸下** button. **Essences can be removed**, which
+  contradicts the earlier "can't remove" note. A strip along the bottom lists all
+  essences, with a filter.
+- 貴重品庫 → 武器基質 tab (411/2000, so the cap is 2000). The detail panel shows a
+  **完美搭配** badge, origin, the 3 attributes with levels, which weapon it's equipped
+  to, and 獲得方式.
+- **基質願望清單** (native wishlist, up to 200 weapons, 9 set now). A gold essence that is a
+  完美搭配 for any wishlisted weapon is **auto-locked by the game**. That replaces our
+  own lock step (decision 7). Our job becomes choosing where to farm, and optionally
+  keeping the wishlist in sync.
+- 行動手冊 → 索引 → 能量淤積點: a list of 重度能量淤積點, 80 理智 each, with a region filter.
+  Each row has a **基質總覽** (applicable weapons marked 裝備中/已持有/not owned, plus the
+  8 附加 and 8 技能 attributes) and 查看. In-game data can cross-check `locations.json`.
+- 查看 opens the map: 首通獎勵, 消耗理智領取獎勵 (理智 is spent when claiming after the
+  battle), 前往傳送, 追蹤. Teleport was not tried (blocked pending approval).
+- 理智 potions (緊急理智加強劑) have expiry dates (36 left with 3 days, 13 with 10 days).
+  The planner should use the expiring ones first.
+
 ### Phase 1 — infra and menu
 - Python project (uv), `maafw` dependency, MaaEnd as a pinned git submodule, script that
   downloads the matching prebuilt agents from MaaEnd's releases.
