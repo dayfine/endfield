@@ -91,9 +91,18 @@ def known_options() -> tuple[set[str], dict[str, dict]]:
     return tasks, options
 
 
+def _task_defs() -> dict[str, dict]:
+    data = interface()
+    defs = {t["name"]: t for t in data.get("task", [])}
+    for imp in data["import"]:
+        defs.update({t["name"]: t for t in jsonc.load(VENDOR / imp).get("task", [])})
+    return defs
+
+
 def validate(tasks: list[Task]) -> list[str]:
     """Problems with task or option names/values, so typos fail before touching the phone."""
     names, options = known_options()
+    task_defs = _task_defs()
     problems = []
     for t in tasks:
         if t.name not in names:
@@ -112,6 +121,12 @@ def validate(tasks: list[Task]) -> list[str]:
                 bad = {str(v) for v in values} - allowed
             if bad:
                 problems.append(f"{t.name}: {opt} has no {sorted(bad)} (allowed: {sorted(allowed)[:8]})")
+        # MaaPiCli doesn't apply a checkbox's default when the option is left out, so a
+        # missing 執行週期 means "no days" and the task silently skips.
+        task_def = task_defs.get(t.name, {})
+        for opt in task_def.get("option") or []:
+            if opt.endswith("Schedule") and opt not in t.options:
+                problems.append(f"{t.name}: set {opt} explicitly (left out, MaaEnd runs on no days)")
     return problems
 
 

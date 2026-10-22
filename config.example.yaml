@@ -59,6 +59,7 @@ presets:
         DeliveryJobsOngoingDeliveryFallback: "No"
     - task: SellProduct              # 據點交易: all outposts, as configured in game
       options:
+        SellProductSchedule: [SellProductScheduleMonday, SellProductScheduleTuesday, SellProductScheduleWednesday, SellProductScheduleThursday, SellProductScheduleFriday, SellProductScheduleSaturday, SellProductScheduleSunday]
         SellProductOperatorAutoSwitch: "No"
         SellProductPriorityRules: "No"
         SellProductItemReserveRules: "No"

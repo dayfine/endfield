@@ -1,0 +1,36 @@
+{
+    // The 交易 tap right after the quantity slider moves sometimes lands while the screen
+    // is still animating and is ignored; the task then waits for a result that never
+    // comes. Wait for the 交易 button area to settle before tapping (the rest of the page animates, so
+    // a whole-screen wait never settles). (A self-retry isn't safe here:
+    // 交易 is still on screen right after a good tap, so it would tap twice.)
+    "OutpostTradingSell": {
+        "pre_wait_freezes": {"target": [975, 615, 300, 105], "time": 300, "timeout": 3000}
+    },
+
+    // A station that is already sold out today shows 「目前據點調度券存量不足」 where 交易
+    // would be. MaaEnd only checks for that after a trade, so on a fresh visit the task
+    // waits for a 交易 button that isn't there. Let each slider step also end the station.
+    "OutpostTradingCardiacRemediationStationBetterSliding": {"next": ["OutpostTradingSell", "OutpostTradingZeroMoneyWithTip"]},
+    "OutpostTradingInfraStationBetterSliding": {"next": ["OutpostTradingSell", "OutpostTradingZeroMoneyWithTip"]},
+    "OutpostTradingReconstructionHQBetterSliding": {"next": ["OutpostTradingSell", "OutpostTradingZeroMoneyWithTip"]},
+    "OutpostTradingRefugeeCampBetterSliding": {"next": ["OutpostTradingSell", "OutpostTradingZeroMoneyWithTip"]},
+    "OutpostTradingSkyKingFlatsConstructionSiteBetterSliding": {"next": ["OutpostTradingSell", "OutpostTradingZeroMoneyWithTip"]},
+    "OutpostTradingXiranflowCloudseederStationBetterSliding": {"next": ["OutpostTradingSell", "OutpostTradingZeroMoneyWithTip"]},
+
+    // Never change an outpost's goods (user: outposts are configured in game). MaaEnd
+    // switches goods whenever the current one isn't what its 選品策略 would pick, or runs
+    // low. Instead: sell the current goods as they are, and end the outpost when they run
+    // out or the game asks to pick goods.
+    "OutpostTradingSellLoop": {
+        "next": ["[Anchor]OutpostTradingZeroMoneyHandler", "[Anchor]OutpostTradingCurrentGoodsReady", "EndfieldOutpostSellCurrentGoods"]
+    },
+    "EndfieldOutpostSellCurrentGoods": {
+        "desc": "endfield: keep the current goods and go straight to selling",
+        "recognition": "DirectHit",
+        "action": "DoNothing",
+        "next": ["OutpostTradingAtSell"]
+    },
+    "OutpostTradingNeedSelectGoodsTryChangeGoods": {"next": ["OutpostTradingSellLoopEnd"]},
+    "OutpostTradingZeroProductAfterChangeStillEmpty": {"next": ["OutpostTradingSellLoopEnd"]}
+}
