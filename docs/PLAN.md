@@ -187,7 +187,25 @@ including on failure.
   daily run farms what the tracker says is most needed.
 - Done when: the report matches what I see in game for a handful of weapons.
 
+**Making MaaEnd match this phone (2026-10-22):**
+- Force **720x1280**, not 1080x1920. Above 720p the game draws its HUD at 92% of MaaEnd's
+  templates. Density makes no difference.
+- In-game 設定 → 自訂邊界 must be **0** (it was 130). The margin pushes the HUD inward, out of
+  MaaEnd's search areas. It reverted once after a restart, so check it again if matching
+  breaks.
+- `vendor/endfield_tc`: a generated layer that adds Traditional Chinese text (OpenCC s2t and
+  s2twp) to MaaEnd OCR nodes that only have Simplified (290 nodes, including nested
+  all_of/any_of). Terms that are worded differently, not just written differently (紙本紀錄
+  vs 纸质记录), go in the hand-written layer.
+- `resources/endfield`: hand-written fixes, loaded last. So far all are for IntelArchive.
+  MaaEnd ships only PC templates for archive cards, and phone cards have a different shape.
+
 ### Phase 3b — 情報檔案庫 collection table (on demand)
+Status: works. `endfield intel` → runs/<ts>/intel.csv → Google Sheet "終末地 情報檔案庫 收集表".
+First full run: 361/535 pages marked collected. Known undercount: multi-page entries are
+mostly unticked (MaaEnd records those by opening each card, the flaky step), and items
+whose card would not open are skipped. Treat an unticked row as "maybe missing".
+
 - `endfield intel` runs MaaEnd **IntelArchive** (ADB-capable, read-only). It scans
   情報檔案庫 and builds an "import payload" of unlocked entries, which it normally opens in
   Open Endfieldmap (opendfieldmap.org/intel).
