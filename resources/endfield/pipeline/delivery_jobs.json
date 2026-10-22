@@ -1,0 +1,10 @@
+{
+    // At the second depot node the 「下一步」 tap on the cargo-type page sometimes lands
+    // during the page transition and does nothing, and the task then waits for the fill
+    // page forever. Wait for the page to settle before tapping, and if the cargo-type page
+    // is still showing, tap 「下一步」 again.
+    "DeliveryJobsSelectTypeOfGoodsToPackNextStep": {
+        "pre_wait_freezes": {"time": 300, "timeout": 3000},
+        "next": ["DeliveryJobsCargoFillToMax", "DeliveryJobsSelectTypeOfGoodsToPackNextStep"]
+    }
+}
