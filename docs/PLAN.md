@@ -105,6 +105,19 @@ location. E.g. 典範 (主能力/攻擊/壓制) → 樞紐區, 源石研究園, 
   if we ever publish our repo with copied MaaEnd code or pipelines, our repo is AGPL too.
   Keep a clear line: submodule + our own overrides + our own Python.
 
+## Correction (2026-10-22): AutoEssence is not available on Android
+
+MaaEnd v2.34.0 limits **AutoEssence (基質刷取)** to Win32, Linux and PlayCover, not ADB.
+TrialOfSwordmancy, StashBackpack, ItemTransfer and a few others are also PC-only (see
+`docs/maaend_tasks_zh_tw.csv`, column 安卓(ADB)). PlayCover uses the ADB resource layer, so
+forcing AutoEssence on for ADB in our generated interface may work. That's an experiment
+(combat latency over ADB is unknown) and needs the user's OK, because it spends 理智.
+AutoEssence's 目標選擇 mode picks the location and 預刻寫 for the ticked weapons by itself,
+so if it works, our planner only has to choose the weapons.
+
+All tasks and options with zh_tw labels and IDs: `docs/maaend_tasks_zh_tw.csv`. The Google
+Sheet "終末地 日常任務選單" is the user-facing copy with a 想要? column.
+
 ## Phases
 
 ### Phase 0 — device bring-up (needs phone)
@@ -234,7 +247,7 @@ These override anything above that disagrees.
 | 1 | Base | Build on MaaEnd + MaaFramework, our own Python on top. |
 | 2 | MaaEnd source | Pinned **release bundle** (e.g. `MaaEnd-macos-aarch64-v2.34.0.dmg`), extracted to gitignored `vendor/maaend/` by a fetch script; version in `maaend.lock`. No submodule, no building agents. Use the bundle's own MaaFramework dylibs. |
 | 3 | Running tasks | Hybrid: **MaaPiCli** (bundled) runs MaaEnd tasks from a generated `config/maa_pi_config.json`; the **Python binding** runs our own tasks (screenshots, weapon scan). Planner loop works per batch. Verify MaaPiCli runs non-interactively. |
-| 4 | Targets | **All owned 5★/6★ weapons**, from our own weapon-inventory scan (MaaEnd has none). |
+| 4 | Targets | **Targets (updated 2026-10-22): every owned 6★ weapon, plus 5★ weapons that are equipped or above Lv 1.** Read by our weapon scan (貴重品庫 → 武器: rarity, level, 裝備中). |
 | 5 | Done | A weapon is done when it has an essence matching all 3 attributes (any level). Planner: choose location + 3 基礎 + 1 lock covering the most unfinished weapons (≈1/24 per gold drop each); respect 谷地/武陵 刻寫券 budget. |
 | 6 | Autonomy | Fully automatic: `daily` asks the planner, runs AutoEssence, logs drops (after-battle OCR), re-plans per batch. Full inventory rescan weekly. |
 | 7 | Irreversible actions | **Locking is left to the game.** The in-game 基質願望清單 auto-locks 完美搭配 gold essences. We keep the wishlist in sync with all owned 5★/6★ weapons, and each save needs the user's OK. Never discard. Never etch: the report gives a "ready to etch" list. MaaEnd "discard unmatched" stays off. (Updated 2026-10-22 after the device capture.) |

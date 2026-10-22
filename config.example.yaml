@@ -7,3 +7,9 @@ client_version: Global  # MaaEnd ClientVersion: CN, Bilibili, Global, VN
 # MaaEnd needs a 16:9 screen. Forced at the start of a run, reset at the end.
 # Set to null for a device that is already 16:9.
 force_size: 720x1280
+
+# Weapons the essence tracker works toward: every owned 6★, plus 5★ that are equipped or
+# above Lv 1.
+essence_targets:
+  six_star: all_owned
+  five_star: equipped_or_leveled
