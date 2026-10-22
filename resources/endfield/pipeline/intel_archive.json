@@ -1,10 +1,52 @@
 {
     // The archive list page has its own close button inside CloseButtonType1's ROI, so
-    // "close button gone" never holds after closing an item's detail view. Treat the
-    // detail view as closed once its white title strip is gone.
+    // "close button gone" never holds after closing an item's detail view. The detail
+    // view covers the top-left with a dark panel; treat it as closed once the list page's
+    // title (情報檔案庫/<tab>) is readable there again.
     "IntelArchiveResolveTruncClosed": {
         "recognition": "And",
-        "all_of": ["IntelArchiveRecognitionDetailFlag"],
-        "inverse": true
+        "all_of": ["InIntelArchiveView2"],
+        "inverse": false
+    },
+
+    // Phone archive cards have a different shape from PC's (the only templates MaaEnd
+    // ships for this): at 720p a card is ~167x141 with a 50px tab, vs 122x142 / 37px.
+    // image/IntelArchive/ItemIcon2.png is the PC template widened to 167x142. Offsets
+    // below are the PC ones scaled by x 1.37, y 1.29 (label 148px below the tab vs 115).
+    "IntelArchiveRecognitionItemTextBackground": {
+        "roi_offset": [0, 148, 118, 30]
+    },
+    "IntelArchiveRecognitionItemNoPageCount": {
+        "roi_offset": [62, 122, 5, 10]
+    },
+    "IntelArchiveRecognitionItemSecretWithoutPageCount": {
+        "all_of": [
+            "IntelArchiveRecognitionItemIcon",
+            "IntelArchiveRecognitionItemLine",
+            "IntelArchiveRecognitionItemNoPageCount",
+            {
+                "count": 30,
+                "lower": [212, 212, 212],
+                "recognition": "ColorMatch",
+                "roi": "IntelArchiveRecognitionItemNoPageCount",
+                "roi_offset": [-68, 23, 130, 25],
+                "sub_name": "text_bg",
+                "upper": [232, 232, 232]
+            },
+            {
+                "connected": true,
+                "count": 1500,
+                "lower": [40, 40, 40],
+                "recognition": "ColorMatch",
+                "roi": "text_bg",
+                "sub_name": "text_color",
+                "upper": [180, 180, 180]
+            }
+        ]
+    },
+
+    // The TC client calls this tab 紙本紀錄, not a character conversion of 纸质记录.
+    "IntelArchiveSyncFindingsClickPaperTab": {
+        "expected": ["纸质记录", "紙質記錄", "紙本紀錄"]
     }
 }

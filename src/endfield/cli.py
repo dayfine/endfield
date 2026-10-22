@@ -2,7 +2,7 @@ import argparse
 import datetime as dt
 from pathlib import Path
 
-from endfield import ROOT, config, pi, vendor
+from endfield import ROOT, config, intel, pi, vendor
 from endfield.device import Device
 
 
@@ -65,6 +65,22 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def cmd_intel(args: argparse.Namespace) -> int:
+    if not args.no_run:
+        code = cmd_run(argparse.Namespace(tasks=["IntelArchive"]))
+        if code != 0:
+            return code
+    run_dir = sorted((ROOT / "runs").iterdir())[-1]
+    log = run_dir / "go-service.log"
+    if not log.exists():
+        log = pi.PI_DIR / "debug" / "go-service.log"
+    table = intel.rows(intel.payload_from_log(log), intel.misses_from_log(log))
+    out = intel.write_csv(table, run_dir / "intel.csv")
+    done = sum(r.collected for r in table)
+    print(f"{done}/{len(table)} collected; table in {out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="endfield")
     sub = parser.add_subparsers(required=True)
@@ -83,6 +99,10 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("run", help="run MaaEnd tasks by name, in order")
     p.add_argument("tasks", nargs="+")
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("intel", help="scan 情報檔案庫 and write a collection table (CSV)")
+    p.add_argument("--no-run", action="store_true", help="only rebuild from the last run")
+    p.set_defaults(func=cmd_intel)
 
     p = sub.add_parser("screenshot", help="save a screenshot")
     p.add_argument("--out", type=Path)

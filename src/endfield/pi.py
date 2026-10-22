@@ -112,7 +112,10 @@ def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) ->
     )
     shutil.copy(conf, run_dir / "maa_pi_config.json")
     log = PI_DIR / "debug" / "maafw.log"
+    agent_log = PI_DIR / "debug" / "go-service.log"
+    # Both logs append across runs; start each run with fresh ones.
     log.unlink(missing_ok=True)
+    agent_log.unlink(missing_ok=True)
     # MaaToolkit's device scan only finds devices from an adb on PATH.
     env = {**os.environ, "PATH": f"{Path(cfg.adb).parent}{os.pathsep}{os.environ['PATH']}"}
     out_path = run_dir / "maapicli.log"
@@ -130,6 +133,8 @@ def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) ->
         except subprocess.TimeoutExpired:
             out.write(f"\n### endfield: timed out after {timeout:.0f}s ###\n".encode())
             code = -1
+    if agent_log.exists():
+        shutil.copy(agent_log, run_dir / "go-service.log")
     if not log.exists():
         return False
     shutil.copy(log, run_dir / "maafw.log")
