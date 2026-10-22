@@ -141,14 +141,45 @@ location. E.g. 典範 (主能力/攻擊/壓制) → 樞紐區, 源石研究園, 
 - Simple web page for the report; notifications; scheduled runs; more tasks
   (base/factory, 協議空間, events, 選劍演武 on ADB).
 
-## Open questions
+## Decisions (grilling session, 2026-10-22)
 
-1. **OK to build on MaaEnd** (submodule + overrides), or a from-scratch implementation
-   for learning/ownership? The plan assumes reuse.
-2. **Server/region**: global TC client, or a TW/HK-specific one? Affects login flow.
-3. **Tracking scope**: is "what I own vs. what my target weapons need, and where to farm"
-   the right output? Should it also cover weapons not owned yet?
-4. Should automation ever **discard** essences, or only lock/report?
+These override anything above that disagrees.
+
+| # | Topic | Decision |
+|---|---|---|
+| 1 | Base | Build on MaaEnd + MaaFramework, our own Python on top. |
+| 2 | MaaEnd source | Pinned **release bundle** (e.g. `MaaEnd-macos-aarch64-v2.34.0.dmg`), extracted to gitignored `vendor/maaend/` by a fetch script; version in `maaend.lock`. No submodule, no building agents. Use the bundle's own MaaFramework dylibs. |
+| 3 | Running tasks | Hybrid: **MaaPiCli** (bundled) runs MaaEnd tasks from a generated `config/maa_pi_config.json`; the **Python binding** runs our own tasks (screenshots, weapon scan). Planner loop works per batch. Verify MaaPiCli runs non-interactively. |
+| 4 | Targets | **All owned 5★/6★ weapons**, from our own weapon-inventory scan (MaaEnd has none). |
+| 5 | Done | A weapon is done when it has an essence matching all 3 attributes (any level). Planner: choose location + 3 基礎 + 1 lock covering the most unfinished weapons (≈1/24 per gold drop each); respect 谷地/武陵 刻寫券 budget. |
+| 6 | Autonomy | Fully automatic: `daily` asks the planner, runs AutoEssence, logs drops (after-battle OCR), re-plans per batch. Full inventory rescan weekly. |
+| 7 | Irreversible actions | **Lock only.** Never discard (revisit after checking storage capacity), never etch — report gives a "ready to etch" list. MaaEnd "discard unmatched" off. |
+| 8 | Triggering | Manual `endfield run daily` first, built for later `launchd`: one command, clear exit status, `runs/<date>/summary.json`, failure screenshots, lock file. USB ADB. |
+| 9 | Game navigation | Reuse MaaEnd `SceneManager` (`SceneEnter*`, ~238 nodes). Add our own nodes only for the weapon list / weapon detail (likely 貴重品庫 weapon tab). CLI is plain subcommands; HTML report later. |
+| 10 | Essence ↔ weapon | One essence per weapon. Done = matching essence **etched** (read from weapon detail) or a matching inventory essence **reserved** for it (allocated per combination). |
+| 11 | License | AGPL-3.0 (repo is public). |
+| 12 | Testing | pytest for planner/importers + screenshot-replay tests of our pipeline nodes (`tests/fixtures/`). |
+| 13 | Phase 0 | Capture list below; screenshots + navigation only, no 理智/ticket spending without approval. |
+
+Defaults taken without asking: SQLite storage, Python 3.12 via uv, `config.yaml`.
+
+### Phase 0 capture list
+
+1. Device/client: `pm list packages | grep endfield` (→ ClientVersion), resolution/aspect,
+   in-game language 繁體中文, graphics/FPS settings.
+2. Weapon scan: 貴重品庫 weapon tab grid (top / scrolled / end, sort & filter), weapon
+   detail with and without an etched essence, one 4★/5★/6★ each.
+3. Essence inventory: grid, essence detail with levels, locked look, capacity display.
+4. Farming: 行動手冊 → 重度能量淤積點 list → a location → 預刻寫 dialog (with 刻寫券
+   count) → battle start → result screen with drops.
+5. Daily TC check: main screen, mail, missions, pass, login popups.
+
+### Still to confirm on device
+
+- MaaPiCli can run headless from a written config.
+- Essence attribute level scale; storage capacity; how discard behaves.
+- Etched essence attributes are readable on the weapon detail page.
+- MaaEnd `RecoGrid`/`GridTracker` reusable for the weapon grid.
 
 ## References
 
