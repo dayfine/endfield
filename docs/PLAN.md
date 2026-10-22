@@ -114,6 +114,15 @@ location. E.g. 典範 (主能力/攻擊/壓制) → 樞紐區, 源石研究園, 
   預刻寫 dialog, battle result, essence inventory and detail, daily rewards, mail.
 - Done when: `endfield device check` prints the device and saves a screenshot.
 
+**Device (found 2026-10-22):** Pixel 10 over USB, serial `5A060DLCR002CU`, Android 17,
+arm64. Panel 1080x2424 (about 20:9). Game `com.gryphline.endfield.gp` 1.6.4 (Global client,
+server Asia, 繁體中文). adb 36.0.0 bundled with scrcpy 3.3.3.
+
+MaaEnd requires a 16:9 screen that scales to 1280x720, so the run forces
+`adb shell wm size 1080x1920` and restarts the game. The game then lays itself out for
+1920x1080, and screencap returns 1920x1080. Every run must call `wm size reset` on exit,
+including on failure.
+
 ### Phase 1 — infra and menu
 - Python project (uv), `maafw` dependency, MaaEnd as a pinned git submodule, script that
   downloads the matching prebuilt agents from MaaEnd's releases.
