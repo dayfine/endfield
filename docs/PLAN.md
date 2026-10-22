@@ -171,6 +171,22 @@ including on failure.
   daily run farms what the tracker says is most needed.
 - Done when: the report matches what I see in game for a handful of weapons.
 
+### Phase 3b — 情報檔案庫 collection table (on demand)
+- `endfield intel` runs MaaEnd **IntelArchive** (ADB-capable, read-only). It scans
+  情報檔案庫 and builds an "import payload" of unlocked entries, which it normally opens in
+  Open Endfieldmap (opendfieldmap.org/intel).
+- We capture that unlocked list (from the payload or the run log) and join it with MaaEnd's
+  `data/IntelArchive/items.json`. That catalog has 501 items: 見聞輯錄 376, 中樞檔案 80,
+  音像存檔 26, 情報採集 19, with zh_tw names, groups and related items. The region comes
+  from the id (map01 = 四號谷地, map02 = 武陵).
+- Output is one row per item: category, name, group, region, unlocked yes/no, and a map
+  link. Where-to-find comes from Open Endfieldmap if its data can be fetched.
+- Export to **Google Sheets** so the user can work from it. First version: the tool writes
+  CSV and Claude pushes it to a sheet with the Sheets connector. Later: direct API
+  (service account) if this needs to run unattended.
+- First count (2026-10-22): 見聞輯錄 356/376, 中樞檔案 68/80, 音像存檔 25/26, so about 33
+  are missing.
+
 ### Phase 4 — later
 - Simple web page for the report; notifications; scheduled runs; more tasks
   (base/factory, 協議空間, events, 選劍演武 on ADB).
