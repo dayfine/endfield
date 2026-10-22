@@ -144,7 +144,7 @@ including on failure.
   Each row has a **基質總覽** (applicable weapons marked 裝備中/已持有/not owned, plus the
   8 附加 and 8 技能 attributes) and 查看. In-game data can cross-check `locations.json`.
 - 查看 opens the map: 首通獎勵, 消耗理智領取獎勵 (理智 is spent when claiming after the
-  battle), 前往傳送, 追蹤. Teleport was not tried (blocked pending approval).
+  battle), 前往傳送, 追蹤. Teleport works (free). Walking from the teleport to the node needs pathing (camera turns with movement), so use MaaEnd AutoEssence for it.
 - 理智 potions (緊急理智加強劑) have expiry dates (36 left with 3 days, 13 with 10 days).
   The planner should use the expiring ones first.
 
@@ -187,12 +187,12 @@ These override anything above that disagrees.
 | 4 | Targets | **All owned 5★/6★ weapons**, from our own weapon-inventory scan (MaaEnd has none). |
 | 5 | Done | A weapon is done when it has an essence matching all 3 attributes (any level). Planner: choose location + 3 基礎 + 1 lock covering the most unfinished weapons (≈1/24 per gold drop each); respect 谷地/武陵 刻寫券 budget. |
 | 6 | Autonomy | Fully automatic: `daily` asks the planner, runs AutoEssence, logs drops (after-battle OCR), re-plans per batch. Full inventory rescan weekly. |
-| 7 | Irreversible actions | **Lock only.** Never discard (revisit after checking storage capacity), never etch — report gives a "ready to etch" list. MaaEnd "discard unmatched" off. |
+| 7 | Irreversible actions | **Locking is left to the game.** The in-game 基質願望清單 auto-locks 完美搭配 gold essences. We keep the wishlist in sync with all owned 5★/6★ weapons, and each save needs the user's OK. Never discard. Never etch: the report gives a "ready to etch" list. MaaEnd "discard unmatched" stays off. (Updated 2026-10-22 after the device capture.) |
 | 8 | Triggering | Manual `endfield run daily` first, built for later `launchd`: one command, clear exit status, `runs/<date>/summary.json`, failure screenshots, lock file. USB ADB. |
 | 9 | Game navigation | Reuse MaaEnd `SceneManager` (`SceneEnter*`, ~238 nodes). Add our own nodes only for the weapon list / weapon detail (likely 貴重品庫 weapon tab). CLI is plain subcommands; HTML report later. |
 | 10 | Essence ↔ weapon | One essence per weapon. Done = matching essence **etched** (read from weapon detail) or a matching inventory essence **reserved** for it (allocated per combination). |
 | 11 | License | AGPL-3.0 (repo is public). |
-| 12 | Testing | pytest for planner/importers + screenshot-replay tests of our pipeline nodes (`tests/fixtures/`). |
+| 12 | Testing | pytest for planner/importers + screenshot-replay tests of our pipeline nodes (`tests/fixtures/`). Fixtures are 1280x720 PNGs with the UID blacked out (the HUD footer and the profile card). |
 | 13 | Phase 0 | Capture list below; screenshots + navigation only, no 理智/ticket spending without approval. |
 
 Defaults taken without asking: SQLite storage, Python 3.12 via uv, `config.yaml`.
