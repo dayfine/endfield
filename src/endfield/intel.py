@@ -45,6 +45,7 @@ class Row:
     region: str
     investigation: str
     collected: bool
+    where: str = ""  # 取得方式, from Open Endfieldmap
     source: str = ""  # "" when MaaEnd matched it, "ocr-fuzzy" when recovered by us
 
 
@@ -108,11 +109,30 @@ def decode_url(url: str) -> dict:
     return json.loads(raw)
 
 
+HISTORY = VENDOR.parent / "intel_collected.json"
+
+
+def remember(payload: dict, path: Path = HISTORY) -> dict:
+    """Add this run's collected ids to every earlier run's and return the merged payload.
+
+    Archive entries never become uncollected in game, while any one scan misses a few
+    cards, so the union across runs is closer to the truth than the latest run alone.
+    """
+    seen = set(json.loads(path.read_text())) if path.exists() else set()
+    seen |= set(payload["data"]["prtsAllItems"]["collected"])
+    path.write_text(json.dumps(sorted(seen)))
+    merged = json.loads(json.dumps(payload))
+    merged["data"]["prtsAllItems"]["collected"] = sorted(seen)
+    return merged
+
+
 def rows(
     payload: dict,
     misses: list[tuple[str, str]] = (),
+    where: dict[str, str] | None = None,
     items_path: Path = VENDOR / "data/IntelArchive/items.json",
 ) -> list[Row]:
+    where = where or {}
     items = json.loads(items_path.read_text(encoding="utf-8"))["items"]
     lists = payload["data"]["prtsAllItems"]
     collected = set(lists["collected"])
@@ -149,6 +169,7 @@ def rows(
                     region=REGIONS.get(region[0], region[0]) if region else "",
                     investigation=investigation_of.get(p["id"], ""),
                     collected=p["id"] in collected or p["id"] in fuzzy,
+                    where=where.get(p["id"], ""),
                     source="ocr-fuzzy" if p["id"] in fuzzy else "",
                 )
             )
@@ -158,10 +179,10 @@ def rows(
 def write_csv(table: list[Row], path: Path) -> Path:
     with path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["page_id", "分區", "類別", "名稱", "頁", "地區", "所屬調查", "已收集", "來源"])
+        w.writerow(["已收集", "類別", "地區", "取得方式", "名稱", "頁", "所屬調查", "來源", "page_id"])
         for r in table:
             w.writerow([
-                r.page_id, r.section, r.category, r.item, r.page, r.region, r.investigation,
-                "✓" if r.collected else "", "OCR近似" if r.source else "",
+                "✓" if r.collected else "", r.category, r.region, r.where, r.item, r.page,
+                r.investigation, "OCR近似" if r.source else "", r.page_id,
             ])
     return path

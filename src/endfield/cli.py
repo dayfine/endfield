@@ -2,7 +2,7 @@ import argparse
 import datetime as dt
 from pathlib import Path
 
-from endfield import ROOT, config, intel, pi, vendor
+from endfield import ROOT, config, intel, oem, pi, vendor
 from endfield.device import Device
 
 
@@ -74,7 +74,13 @@ def cmd_intel(args: argparse.Namespace) -> int:
     log = run_dir / "go-service.log"
     if not log.exists():
         log = pi.PI_DIR / "debug" / "go-service.log"
-    table = intel.rows(intel.payload_from_log(log), intel.misses_from_log(log))
+    try:
+        where = oem.load()
+    except OSError as e:  # the table is still useful without it
+        print(f"Open Endfieldmap unavailable ({e}); 取得方式 left empty")
+        where = {}
+    payload = intel.remember(intel.payload_from_log(log))
+    table = intel.rows(payload, intel.misses_from_log(log), where)
     out = intel.write_csv(table, run_dir / "intel.csv")
     done = sum(r.collected for r in table)
     print(f"{done}/{len(table)} collected; table in {out}")

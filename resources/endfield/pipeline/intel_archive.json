@@ -19,7 +19,7 @@
         "roi_offset": [0, 148, 80, 30]
     },
     "IntelArchiveRecognitionItemNoPageCount": {
-        "roi_offset": [62, 122, 5, 10]
+        "roi_offset": [58, 121, 5, 10]
     },
     "IntelArchiveRecognitionItemSecretWithoutPageCount": {
         "all_of": [
@@ -31,7 +31,7 @@
                 "lower": [212, 212, 212],
                 "recognition": "ColorMatch",
                 "roi": "IntelArchiveRecognitionItemNoPageCount",
-                "roi_offset": [-68, 23, 130, 25],
+                "roi_offset": [-58, 23, 110, 25],
                 "sub_name": "text_bg",
                 "upper": [232, 232, 232]
             },
@@ -77,5 +77,16 @@
     "IntelArchiveSyncIntelGatheringInnerScrollFinish": {"custom_recognition_param": {"threshold": 0.995}},
     "IntelArchiveSyncIntelGatheringScrollFinish": {"custom_recognition_param": {"threshold": 0.995}},
     "IntelArchiveSyncNexusFilesScrollFinishCentral": {"custom_recognition_param": {"threshold": 0.995}},
-    "IntelArchiveSyncNexusFilesScrollFinishReport": {"custom_recognition_param": {"threshold": 0.995}}
+    "IntelArchiveSyncNexusFilesScrollFinishReport": {"custom_recognition_param": {"threshold": 0.995}},
+
+    // Detail view: the white strip above the title is at (322, 61, 119x7) on the phone,
+    // just below PC's ROI (y 0-60), so no page title was read. That left multi-page
+    // entries (read page by page here) and truncated titles unrecorded. Stop the ROI above
+    // the title text (y 76+) so the strip is the connected white blob it finds.
+    "IntelArchiveRecognitionDetailFlag": {
+        "roi": [300, 40, 260, 34]
+    },
+    "IntelArchiveRecognitionDetailTitleColor": {
+        "roi_offset": [-22, 10, 600, 42]
+    }
 }

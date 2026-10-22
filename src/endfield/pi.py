@@ -89,6 +89,15 @@ def pi_config(cfg: Config, tasks: list[Task]) -> dict:
     }
 
 
+def _shims(run_dir: Path) -> Path:
+    shims = VENDOR.parent / "shims"
+    shims.mkdir(exist_ok=True)
+    opener = shims / "open"
+    opener.write_text(f'#!/bin/sh\necho "$@" >> "{run_dir / "opened_urls.txt"}"\n')
+    opener.chmod(0o755)
+    return shims
+
+
 _TASK_EVENT = re.compile(rb"msg=Tasker\.Task\.(Succeeded|Failed)\] \[details=\{\"entry\":\"([^\"]+)\"")
 
 
@@ -116,8 +125,13 @@ def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) ->
     # Both logs append across runs; start each run with fresh ones.
     log.unlink(missing_ok=True)
     agent_log.unlink(missing_ok=True)
-    # MaaToolkit's device scan only finds devices from an adb on PATH.
-    env = {**os.environ, "PATH": f"{Path(cfg.adb).parent}{os.pathsep}{os.environ['PATH']}"}
+    # MaaToolkit's device scan only finds devices from an adb on PATH. The shim dir comes
+    # first: IntelArchive opens its result in a browser with `open <url>`, which would
+    # import every run into the user's Open Endfieldmap progress; the shim only logs it.
+    env = {
+        **os.environ,
+        "PATH": os.pathsep.join([str(_shims(run_dir)), str(Path(cfg.adb).parent), os.environ["PATH"]]),
+    }
     out_path = run_dir / "maapicli.log"
     with out_path.open("wb") as out:
         try:
