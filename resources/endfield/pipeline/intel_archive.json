@@ -1,0 +1,10 @@
+{
+    // The archive list page has its own close button inside CloseButtonType1's ROI, so
+    // "close button gone" never holds after closing an item's detail view. Treat the
+    // detail view as closed once its white title strip is gone.
+    "IntelArchiveResolveTruncClosed": {
+        "recognition": "And",
+        "all_of": ["IntelArchiveRecognitionDetailFlag"],
+        "inverse": true
+    }
+}

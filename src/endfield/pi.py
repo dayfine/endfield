@@ -7,16 +7,18 @@ project files into that folder and writes an interface.json that MaaPiCli can pa
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from endfield import jsonc
+from endfield import ROOT, jsonc, overrides
 from endfield.config import Config
 from endfield.vendor import PICLI, VENDOR
 
 PI_DIR = PICLI.parent
+OUR_LAYER = ROOT / "resources" / "endfield"
 LINKED = ["resource", "resource_adb", "tasks", "locales", "agent", "data"]
 
 # Imports that use features the bundled MaaPiCli can't parse and that ADB doesn't need.
@@ -29,10 +31,20 @@ def interface() -> dict:
     data["import"] = [p for p in data["import"] if p not in SKIP_IMPORTS]
     # Don't pass MaaEnd's Sentry DSN on to agents; our runs shouldn't report to it.
     data.pop("telemetry", None)
+    # Load our layers after MaaEnd's ADB layer: generated Traditional Chinese OCR text,
+    # then hand-written fixes (resources/endfield).
+    for ctrl in data["controller"]:
+        if ctrl["name"] == "ADB":
+            ctrl["attach_resource_path"] = [
+                *ctrl["attach_resource_path"],
+                str(overrides.LAYER),
+                str(OUR_LAYER),
+            ]
     return data
 
 
 def prepare() -> Path:
+    overrides.build()
     for name in LINKED:
         link = PI_DIR / name
         if not link.is_symlink():
@@ -77,14 +89,20 @@ def pi_config(cfg: Config, tasks: list[Task]) -> dict:
     }
 
 
-SUCCESS = b"All tasks have been completed"
+_TASK_EVENT = re.compile(rb"msg=Tasker\.Task\.(Succeeded|Failed)\] \[details=\{\"entry\":\"([^\"]+)\"")
+
+
+def task_results(maafw_log: bytes) -> list[tuple[str, bool]]:
+    """(entry, succeeded) for each finished task, in order, from maafw.log."""
+    return [(e.decode(), r == b"Succeeded") for r, e in _TASK_EVENT.findall(maafw_log)]
 
 
 def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) -> bool:
     """Run tasks with `MaaPiCli -d`; logs go to run_dir. Returns True on success.
 
     MaaPiCli's exit code can't be trusted (its signal handler exits 0, even on a crash),
-    so success means the completion line appears in its output.
+    and it prints "All tasks have been completed" even when a task failed. Success means
+    maafw.log has a Tasker.Task.Succeeded event for every task and no Failed event.
     """
     prepare()
     conf = PI_DIR / "config" / "maa_pi_config.json"
@@ -112,6 +130,8 @@ def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) ->
         except subprocess.TimeoutExpired:
             out.write(f"\n### endfield: timed out after {timeout:.0f}s ###\n".encode())
             code = -1
-    if log.exists():
-        shutil.copy(log, run_dir / "maafw.log")
-    return code == 0 and SUCCESS in out_path.read_bytes()
+    if not log.exists():
+        return False
+    shutil.copy(log, run_dir / "maafw.log")
+    results = task_results(log.read_bytes())
+    return code == 0 and len(results) == len(tasks) and all(ok for _, ok in results)

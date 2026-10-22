@@ -53,3 +53,13 @@ def test_pi_config_names_device_like_toolkit():
 
 def test_jsonc_leaves_commas_inside_strings():
     assert jsonc.loads('{"a": "x,]", "b": "y, }"}') == {"a": "x,]", "b": "y, }"}
+
+
+def test_task_results_from_maafw_log():
+    log = (
+        b'[x][INF] !!!OnEventNotify!!! [handle=true] [msg=Tasker.Task.Starting] '
+        b'[details={"entry":"A","hash":"1"}]\n'
+        b'[x][INF] [msg=Tasker.Task.Succeeded] [details={"entry":"A","hash":"1"}]\n'
+        b'[x][INF] [msg=Tasker.Task.Failed] [details={"entry":"B","hash":"2"}]\n'
+    )
+    assert pi.task_results(log) == [("A", True), ("B", False)]
