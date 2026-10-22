@@ -32,3 +32,8 @@ def test_inline_sub_recognitions_get_tc():
             "InIntelArchive",
         ]
     }
+
+
+def test_ocr_confusions_added_even_when_tc_present():
+    o = overrides.tc_override({"recognition": "OCR", "expected": ["节点一览", "節點一覽"]})
+    assert "節点一覽" in o["expected"]

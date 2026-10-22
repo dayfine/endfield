@@ -22,6 +22,10 @@ BASE_LAYERS = ["resource", "resource_adb"]
 _HAN = re.compile(r"[一-鿿]")
 _CONVERTERS = [OpenCC("s2t"), OpenCC("s2twp")]
 
+# Traditional characters MaaEnd's OCR model (mostly trained on Simplified) reads as
+# another character on the TC client. Seen on device: 節點一覽 read as 節点一覽.
+OCR_CONFUSIONS = {"點": "点"}
+
 
 def merged_nodes(root: Path = VENDOR) -> dict:
     nodes: dict = {}
@@ -37,10 +41,21 @@ def tc_variants(text: str) -> list[str]:
     return [v for v in dict.fromkeys(c.convert(text) for c in _CONVERTERS) if v != text]
 
 
+def _confused(text: str) -> str:
+    return "".join(OCR_CONFUSIONS.get(ch, ch) for ch in text)
+
+
 def _with_tc(exp) -> list[str] | None:
     exp = [exp] if isinstance(exp, str) else list(exp)
-    additions = [v for e in exp if _HAN.search(e) for v in tc_variants(e) if v not in exp]
-    return exp + additions if additions else None
+    new = list(exp)
+    for e in exp:
+        if not _HAN.search(e):
+            continue
+        for v in [*tc_variants(e), e]:
+            for w in (v, _confused(v)):
+                if w not in new:
+                    new.append(w)
+    return new if len(new) > len(exp) else None
 
 
 def _patch(reco_holder: dict) -> bool:
