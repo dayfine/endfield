@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
@@ -13,6 +13,8 @@ class Config:
     package: str
     force_size: str | None
     client_version: str  # MaaEnd ClientVersion case: CN, Bilibili, Global, VN
+    # preset name -> [{"task": name, "options": {option: value}}]
+    presets: dict = field(default_factory=dict)
 
 
 def load(path: Path | None = None) -> Config:
@@ -26,4 +28,5 @@ def load(path: Path | None = None) -> Config:
         package=raw.get("package", "com.gryphline.endfield.gp"),
         force_size=raw.get("force_size"),
         client_version=raw.get("client_version", "Global"),
+        presets=raw.get("presets") or {},
     )

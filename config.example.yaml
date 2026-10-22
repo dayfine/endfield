@@ -13,3 +13,88 @@ force_size: 720x1280
 essence_targets:
   six_star: all_owned
   five_star: equipped_or_leveled
+
+# Task presets for `endfield run --preset NAME`. Tasks run in order. Options use MaaEnd's
+# option and case names (labels: docs/maaend_tasks_zh_tw.csv); unlisted options keep
+# MaaEnd's defaults. Agreed with the user 2026-10-22: no 理智 spending.
+presets:
+  daily:
+    - task: AndroidOpenGame          # ClientVersion comes from client_version above
+    - task: DailyRewards             # 日常獎勵領取
+      options:
+        DailyEmailRewards: "Yes"
+        DailyTaskRewards: "Yes"
+        DailyTaskUpgradeWeapon: "No"
+        DailyTaskCreation: "No"
+        DailyTaskAssemble: "No"
+        DailyTaskLevelUpOperator: "No"
+        DailyClaimDeliveryJobsRewards: "Yes"
+        DailyEventRewards: "Yes"
+        DailyProtocolPassRewards: "Yes"
+        DailyActivityFullWarning: "Yes"
+    - task: VisitFriends             # 拜訪好友
+      options:
+        VisitFriendsRemark: "Yes"
+        VisitFriendsPriorityRemarkEnable: "No"
+        ProductionAssistControl: [ProductionAssistControlNexus, ProductionAssistMFGCabin, ProductionAssistGrowthChamber]
+    - task: CreditShoppingN2         # 信用點購物: only 武庫配額 + 嵌晶玉
+      options:
+        CreditShoppingReserve: {ReserveCreditThreshold: "300"}
+        CreditShoppingPriority1: "Yes"
+        CreditShoppingPriority1AutoGetCredits: "Yes"
+        CreditShoppingPriority1UnconditionalPurchase: "Yes"
+        CreditShoppingPriority1Items: [ArsenalTicket, Oroberyl]
+        CreditShoppingPriority1DiscountValue: Any
+        CreditShoppingPriority2: "No"
+        CreditShoppingPriority3: "No"
+        CreditShoppingForce: Exit
+    - task: DeliveryJobs             # 轉交委託: 武陵, always hand over
+      options:
+        ValleyIV: "No"
+        Wuling: "Yes"
+        WulingCity: Transfer
+        TestArea: Transfer
+        PackCargoSelectItem: "No"
+        DeliveryJobsAutoDeliveryPreferZipline: "No"
+        DeliveryJobsOngoingDeliveryFallback: "No"
+    - task: SellProduct              # 據點交易: all outposts, as configured in game
+      options:
+        SellProductOperatorAutoSwitch: "No"
+        SellProductPriorityRules: "No"
+        SellProductItemReserveRules: "No"
+        ValleyIVSell: "Yes"
+        WulingSell: "Yes"
+    - task: AutoStockpile            # 自動囤貨: buy only, 武陵
+      options:
+        AutoStockpileServerTime: ASIA_UTC_PLUS_8
+        AutoStockpileAllowDataUpload: "No"
+        AutoStockpileElasticValleyIV: "No"
+        AutoStockpileElasticWuling: "Yes"
+        AutoStockpileMinBuy: "No"
+    - task: EnvironmentMonitoring    # 環境監測
+    - task: AutoEcoFarm              # 生態農場
+      options:
+        CollectWulingCityFarm: "Yes"
+        CollectSisPaintingFarm: "Yes"
+        CollectRanch: "Yes"
+    - task: GiftOperator             # 贈送幹員禮物: only receive
+      options:
+        StashBackpackSubTask: "Yes"
+        OnlyReceiveGift: "Yes"
+        AcceptAllGifts: "No"
+    - task: DijiangRewards           # 基建任務, last: replanting can run out of seeds
+      options:
+        AutoStartExchange: "Yes"
+        WaitExchangeBeforeStart: "Yes"
+        StageTaskSetting: "Yes"
+        FastCollect: "Yes"
+        RecoveryEmotionStage: "No"
+        ReceptionRoomStage: "No"
+        ManufacturingStage: "No"
+        GrowthChamberStage: "No"
+        ClueSetting: "Yes"
+        SendCluesDirect: "Yes"
+        ClueSend: {MaxClueSend: "3"}
+        ClueStockLimit: "2"
+        QuickGiveDuplicateClues: "Yes"
+        SelectToGrow: GrowAgain

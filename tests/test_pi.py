@@ -63,3 +63,15 @@ def test_task_results_from_maafw_log():
         b'[x][INF] [msg=Tasker.Task.Failed] [details={"entry":"B","hash":"2"}]\n'
     )
     assert pi.task_results(log) == [("A", True), ("B", False)]
+
+
+def test_validate_catches_bad_names_and_values():
+    problems = pi.validate([
+        pi.Task("DailyRewards", {"DailyEmailRewards": "Yes", "NoSuchOption": "Yes"}),
+        pi.Task("CreditShoppingN2", {"CreditShoppingPriority1Items": ["Oroberyl", "Gold"]}),
+        pi.Task("NoSuchTask"),
+    ])
+    assert any("NoSuchOption" in p for p in problems)
+    assert any("Gold" in p for p in problems)
+    assert any("unknown task NoSuchTask" in p for p in problems)
+    assert not any("DailyEmailRewards" in p for p in problems)

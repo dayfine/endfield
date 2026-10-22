@@ -78,6 +78,43 @@ class Task:
         return {"name": self.name, "option": opts}
 
 
+def known_options() -> tuple[set[str], dict[str, dict]]:
+    """Task names and all option definitions in the generated interface."""
+    data = interface()
+    tasks, options = set(), dict(data.get("option", {}))
+    for t in data.get("task", []):
+        tasks.add(t["name"])
+    for imp in data["import"]:
+        d = jsonc.load(VENDOR / imp)
+        tasks |= {t["name"] for t in d.get("task", [])}
+        options.update(d.get("option") or {})
+    return tasks, options
+
+
+def validate(tasks: list[Task]) -> list[str]:
+    """Problems with task or option names/values, so typos fail before touching the phone."""
+    names, options = known_options()
+    problems = []
+    for t in tasks:
+        if t.name not in names:
+            problems.append(f"unknown task {t.name}")
+        for opt, value in t.options.items():
+            o = options.get(opt)
+            if o is None:
+                problems.append(f"{t.name}: unknown option {opt}")
+                continue
+            if o.get("type") == "input":
+                allowed = {i["name"] for i in o.get("inputs", [])}
+                bad = set(value) - allowed if isinstance(value, dict) else {"<not a mapping>"}
+            else:
+                allowed = {c["name"] for c in o.get("cases", [])}
+                values = value if isinstance(value, list) else [value]
+                bad = {str(v) for v in values} - allowed
+            if bad:
+                problems.append(f"{t.name}: {opt} has no {sorted(bad)} (allowed: {sorted(allowed)[:8]})")
+    return problems
+
+
 def pi_config(cfg: Config, tasks: list[Task]) -> dict:
     return {
         "controller": {"name": "ADB"},

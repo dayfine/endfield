@@ -46,16 +46,45 @@ def cmd_size(args: argparse.Namespace) -> int:
     return 0
 
 
+def _opt(value):
+    """YAML option value -> MaaPiCli value (case names and inputs are strings)."""
+    if isinstance(value, list):
+        return [str(v) for v in value]
+    if isinstance(value, dict):
+        return {k: str(v) for k, v in value.items()}
+    return str(value)
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     cfg = config.load()
     dev = Device(cfg)
     if not dev.is_connected():
         print(f"device {cfg.serial} not connected")
         return 1
-    tasks = [pi.Task(name) for name in args.tasks]
+    if args.preset:
+        entries = cfg.presets.get(args.preset)
+        if entries is None:
+            print(f"no preset {args.preset!r} in config.yaml")
+            return 1
+        tasks = [pi.Task(e["task"], {k: _opt(v) for k, v in (e.get("options") or {}).items()}) for e in entries]
+    else:
+        tasks = [pi.Task(name) for name in args.tasks]
+    if args.only:
+        tasks = [t for t in tasks if t.name in args.only]
+        if not tasks:
+            print(f"none of {args.only} in the task list")
+            return 1
     for task in tasks:
         if task.name in ("AndroidOpenGame", "CloseGame"):
             task.options["ClientVersion"] = cfg.client_version
+    problems = pi.validate(tasks)
+    if problems:
+        print("config problems:\n  " + "\n  ".join(problems))
+        return 1
+    if args.dry_run:
+        for t in tasks:
+            print(t.name, t.options or "")
+        return 0
     run_dir = _run_dir()
     with dev.forced_size():
         ok = pi.run(cfg, tasks, run_dir)
@@ -67,7 +96,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 def cmd_intel(args: argparse.Namespace) -> int:
     if not args.no_run:
-        code = cmd_run(argparse.Namespace(tasks=["IntelArchive"]))
+        code = cmd_run(argparse.Namespace(tasks=["IntelArchive"], preset=None, only=None, dry_run=False))
         if code != 0:
             return code
     run_dir = sorted((ROOT / "runs").iterdir())[-1]
@@ -102,8 +131,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("mode", nargs="?", choices=["show", "force", "reset"], default="show")
     p.set_defaults(func=cmd_size)
 
-    p = sub.add_parser("run", help="run MaaEnd tasks by name, in order")
-    p.add_argument("tasks", nargs="+")
+    p = sub.add_parser("run", help="run MaaEnd tasks by name, or a preset from config.yaml")
+    p.add_argument("tasks", nargs="*")
+    p.add_argument("--preset", help="preset name in config.yaml, e.g. daily")
+    p.add_argument("--only", nargs="+", metavar="TASK", help="run only these tasks of the list")
+    p.add_argument("--dry-run", action="store_true", help="validate and print, don't run")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("intel", help="scan 情報檔案庫 and write a collection table (CSV)")
