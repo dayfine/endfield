@@ -1,0 +1,9 @@
+# Copy to config.yaml and edit.
+adb: /Users/difan/Downloads/scrcpy-macos-aarch64-v3.3.3/adb
+serial: 5A060DLCR002CU
+package: com.gryphline.endfield.gp
+client_version: Global  # MaaEnd ClientVersion: CN, Bilibili, Global, VN
+
+# MaaEnd needs a 16:9 screen. Forced at the start of a run, reset at the end.
+# Set to null for a device that is already 16:9.
+force_size: 1080x1920

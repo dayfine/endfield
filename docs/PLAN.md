@@ -148,13 +148,29 @@ including on failure.
 - 理智 potions (緊急理智加強劑) have expiry dates (36 left with 3 days, 13 with 10 days).
   The planner should use the expiring ones first.
 
-### Phase 1 — infra and menu
-- Python project (uv), `maafw` dependency, MaaEnd as a pinned git submodule, script that
-  downloads the matching prebuilt agents from MaaEnd's releases.
-- `endfield` CLI: `device check`, `screenshot`, `run <task|preset>`, `list`, with logs
-  and a screenshot on failure in `runs/<timestamp>/`.
-- Config file: device serial, presets (which tasks, options), target weapons.
-- Done when: a no-op MaaEnd task (open game / go to main screen) runs from our CLI.
+### Phase 1 — infra and menu (done 2026-10-22)
+- Python project (uv, Python 3.12), package in `src/endfield`.
+- `endfield fetch` downloads the pinned release (`maaend.lock`: version, URL, sha256),
+  mounts the dmg and copies `MaaEnd.app/Contents/MacOS` into gitignored `vendor/maaend`.
+- `endfield device check | device size [force|reset] | screenshot | run <task>...`.
+  `run` writes `runs/<timestamp>/` with the generated config, MaaPiCli output, maafw.log,
+  and `failure.png` on failure.
+- Done: `endfield run AndroidOpenGame` runs headless and completes.
+
+**MaaPiCli notes** (headless works with `MaaPiCli -d`, which runs the saved config):
+- The bundle ships `maafw/MaaPiCli` without the exec bit; `fetch` sets it.
+- MaaPiCli loads the project (`interface.json`, resources, agents) and its config from
+  the folder of its own libraries (`vendor/maaend/maafw`), not the cwd. `pi.prepare()`
+  links `resource`, `resource_adb`, `tasks`, `locales`, `agent`, `data` into that folder,
+  plus `maafw -> .`, because the agents run with that cwd and load `./maafw/libMaaFramework`.
+- The bundled MaaPiCli can't parse the `hotkey` option type, so the generated
+  `interface.json` drops `tasks/setting/Keymap.json` (PC keymaps). It also drops the
+  Sentry `telemetry` block.
+- The ADB device must be named `<serial>-<adb path>` (MaaToolkit's naming), and our adb
+  must be on PATH. Otherwise MaaPiCli doesn't fill in screencap/input methods and
+  controller creation fails.
+- Exit code is always 0, even on a crash (its signal handler calls `exit(0)`). Success is
+  `### All tasks have been completed ###` in the output. Runs time out after 1 hour.
 
 ### Phase 2 — daily routine
 - Preset `daily`: start game → DailyRewards → mail/pass → shops → AutoEssence with N
@@ -226,7 +242,7 @@ Defaults taken without asking: SQLite storage, Python 3.12 via uv, `config.yaml`
 
 ### Still to confirm on device
 
-- MaaPiCli can run headless from a written config.
+- ~~MaaPiCli can run headless from a written config.~~ Yes (`-d`), see Phase 1 notes.
 - Essence attribute level scale; storage capacity; how discard behaves.
 - Etched essence attributes are readable on the weapon detail page.
 - MaaEnd `RecoGrid`/`GridTracker` reusable for the weapon grid.

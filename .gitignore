@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Fetched MaaEnd release bundle (see maaend.lock)
+vendor/
+
+# Local config and run output
+config.yaml
+runs/
