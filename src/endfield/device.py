@@ -74,6 +74,10 @@ class Device:
             game_version=self.game_version(),
         )
 
+    def is_locked(self) -> bool:
+        """Lock screen showing (we never try to get past it; the user unlocks)."""
+        return "isKeyguardShowing=true" in self.shell("dumpsys window")
+
     def screenshot(self, path: Path) -> Path:
         png = self._adb("exec-out", "screencap", "-p", binary=True)
         if not png.startswith(b"\x89PNG"):
@@ -84,6 +88,21 @@ class Device:
 
     def set_size(self, size: str | None) -> None:
         self.shell(f"wm size {size}" if size else "wm size reset")
+
+    @contextlib.contextmanager
+    def stay_awake(self) -> Iterator[None]:
+        """Keep the screen on while plugged in for the duration (screen timeout is 30s
+        on the phone, and waits without taps let it sleep mid-task), then restore."""
+        before = self.shell("settings get global stay_on_while_plugged_in").strip()
+        self.shell("svc power stayon usb")
+        self.shell("input keyevent KEYCODE_WAKEUP")
+        try:
+            yield
+        finally:
+            if before in ("", "0", "null"):
+                self.shell("svc power stayon false")
+            else:
+                self.shell(f"settings put global stay_on_while_plugged_in {before}")
 
     @contextlib.contextmanager
     def forced_size(self) -> Iterator[None]:

@@ -85,8 +85,12 @@ def cmd_run(args: argparse.Namespace) -> int:
         for t in tasks:
             print(t.name, t.options or "")
         return 0
+    dev.shell("input keyevent KEYCODE_WAKEUP")
+    if dev.is_locked():
+        print("phone is locked: unlock it, then run again")
+        return 2
     run_dir = _run_dir()
-    with dev.forced_size():
+    with dev.stay_awake(), dev.forced_size():
         ok = pi.run(cfg, tasks, run_dir)
         if not ok:
             dev.screenshot(run_dir / "failure.png")

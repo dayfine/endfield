@@ -177,6 +177,9 @@ def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) ->
     # Both logs append across runs; start each run with fresh ones.
     log.unlink(missing_ok=True)
     agent_log.unlink(missing_ok=True)
+    # MaaFramework rotates maafw.log to maafw.bak.<time>.log when it grows large.
+    for old in PI_DIR.glob("debug/maafw.bak.*.log"):
+        old.unlink()
     # MaaToolkit's device scan only finds devices from an adb on PATH. The shim dir comes
     # first: IntelArchive opens its result in a browser with `open <url>`, which would
     # import every run into the user's Open Endfieldmap progress; the shim only logs it.
@@ -203,6 +206,9 @@ def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) ->
         shutil.copy(agent_log, run_dir / "go-service.log")
     if not log.exists():
         return False
-    shutil.copy(log, run_dir / "maafw.log")
-    results = task_results(log.read_bytes())
+    parts = sorted(PI_DIR.glob("debug/maafw.bak.*.log")) + [log]
+    with (run_dir / "maafw.log").open("wb") as merged:
+        for part in parts:
+            merged.write(part.read_bytes())
+    results = task_results((run_dir / "maafw.log").read_bytes())
     return code == 0 and len(results) == len(tasks) and all(ok for _, ok in results)
