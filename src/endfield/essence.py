@@ -20,6 +20,8 @@ LOCALE = VENDOR / "locales" / "interface" / "zh_tw.json"
 COMMON_LAYER = ROOT / "resources" / "essence_common"
 # Resource layer for `essence go`: never claims, discards or starts the challenge.
 STOP_LAYER = ROOT / "resources" / "essence_go"
+# Resource layer for `essence scan`: EssenceFilter export that doesn't abort on TC OCR.
+SCAN_LAYER = ROOT / "resources" / "essence_scan"
 # Resource layer for `essence farm`: one round (run off, wait, claim), ends on the loot screen.
 FARM_LAYER = ROOT / "resources" / "essence_farm"
 
@@ -171,3 +173,14 @@ def describe(step: Step) -> str:
     base = "/".join(skill_label(c) for c in fill_base(step.base))
     return (f"{locs[step.location]['name']}  基礎={base}  鎖={skill_label(step.lock)}"
             f"  -> {', '.join(step.weapons)}  (~1/{round(1 / step.odds)} per drop)")
+
+
+def scan_task() -> pi.Task:
+    """MaaEnd's EssenceFilter inventory export: read-only, no marks changed."""
+    return pi.Task("EssenceFilter", {"ExportInventory": "Yes"})
+
+
+def find_export(since: float) -> Path | None:
+    """EssenceInventory.json written by the agent after `since` (epoch seconds)."""
+    hits = [p for p in (pi.PI_DIR).rglob("EssenceInventory*.json") if p.stat().st_mtime >= since]
+    return max(hits, key=lambda p: p.stat().st_mtime) if hits else None

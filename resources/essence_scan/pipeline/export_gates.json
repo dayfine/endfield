@@ -1,0 +1,14 @@
+{
+    // Loaded only by `endfield essence scan` (EssenceFilter with ExportInventory).
+    // Each slot node gates its custom OCR action on a pipeline OCR of the same box. On the
+    // TC client that gate reads an empty string (2-char skill names such as 迸發) and only
+    // passes by luck; one miss sends the run to OCRFallback, which ExportInventory turns
+    // into StopTask, so no EssenceInventory.json is written (seen 2026-10-22 after ~20
+    // items). The agent action does its own OCR, so let the gates always pass.
+    "EssenceFilterCheckItemSlot1": { "recognition": { "type": "DirectHit" } },
+    "EssenceFilterCheckItemSlot1Level": { "recognition": { "type": "DirectHit" } },
+    "EssenceFilterCheckItemSlot2": { "recognition": { "type": "DirectHit" } },
+    "EssenceFilterCheckItemSlot2Level": { "recognition": { "type": "DirectHit" } },
+    "EssenceFilterCheckItemSlot3": { "recognition": { "type": "DirectHit" } },
+    "EssenceFilterCheckItemSlot3Level": { "recognition": { "type": "DirectHit" } }
+}

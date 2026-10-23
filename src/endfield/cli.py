@@ -220,6 +220,37 @@ def cmd_essence_go(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def cmd_essence_scan(args: argparse.Namespace) -> int:
+    """Export the 無瑕基質 inventory (read-only) into the run dir."""
+    cfg = config.load()
+    tasks = [pi.Task("AndroidOpenGame", {"ClientVersion": cfg.client_version}), essence.scan_task()]
+    problems = pi.validate(tasks)
+    if problems:
+        print("config problems:\n  " + "\n  ".join(problems))
+        return 1
+    dev = Device(cfg)
+    if not dev.is_connected():
+        print(f"device {cfg.serial} not connected")
+        return 1
+    dev.shell("input keyevent KEYCODE_WAKEUP")
+    if dev.is_locked():
+        print("phone is locked: unlock it, then run again")
+        return 2
+    run_dir = _run_dir()
+    started = time.time()
+    with dev.stay_awake(), dev.forced_size():
+        tasks = _skip_open_if_in_game(cfg, dev, tasks, run_dir)
+        ok = pi.run(cfg, tasks, run_dir, extra_layers=(essence.SCAN_LAYER,))
+    export = essence.find_export(started)
+    if export is None:
+        print(f"no EssenceInventory.json written ({'ok' if ok else 'failed'}); logs in {run_dir}")
+        return 1
+    out = run_dir / "EssenceInventory.json"
+    out.write_bytes(export.read_bytes())
+    print(f"essence inventory: {out}")
+    return 0
+
+
 def cmd_essence_farm(args: argparse.Namespace) -> int:
     """Farm a plan step: per round run off, wait for the turrets, claim (80 理智 + 1 刻寫券),
     and stop on the loot screen so it can be checked. Never uses 理智 medicine."""
@@ -299,6 +330,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("step", type=int)
     p.set_defaults(func=cmd_essence_go)
 
+    p = ess.add_parser("scan", help="export the 無瑕基質 inventory (read-only)")
+    p.set_defaults(func=cmd_essence_scan)
     p = ess.add_parser("farm", help="farm a plan step: run off, wait, claim; stop on the loot screen")
     p.add_argument("step", type=int)
     p.add_argument("--rounds", type=int, default=1, help="claims to make at most (80 理智 each)")
