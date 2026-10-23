@@ -137,7 +137,7 @@ def cmd_weapons(args: argparse.Namespace) -> int:
         if problem:
             print(f"{problem}; open 貴重品庫 → 武器, sort by 品質 / 降序, then run again")
             return 1
-        seen = scanner.scan()
+        seen = scanner.scan(max_pages=args.pages)
     out = weapons.write(seen, run_dir / "weapons.json")
     rows = weapons.summarise(seen)
     targets = [r for r in rows if weapons.is_target(r)]
@@ -173,6 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(func=cmd_intel)
 
     p = sub.add_parser("weapons", help="scan owned weapons (貴重品庫 → 武器) into weapons.json")
+    p.add_argument("--pages", type=int, default=60, help="stop after this many screens")
     p.set_defaults(func=cmd_weapons)
 
     p = sub.add_parser("screenshot", help="save a screenshot")
