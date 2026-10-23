@@ -2,7 +2,7 @@ import argparse
 import datetime as dt
 from pathlib import Path
 
-from endfield import ROOT, config, intel, oem, pi, vendor, weapons
+from endfield import ROOT, config, intel, oem, pi, report, vendor, weapons
 from endfield.device import Device
 
 
@@ -94,6 +94,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         ok = pi.run(cfg, tasks, run_dir)
         if not ok:
             dev.screenshot(run_dir / "failure.png")
+    if (run_dir / "maafw.log").exists():
+        print(report.render(run_dir))
+        report.write(run_dir)
     print(f"{'ok' if ok else 'failed'}: logs in {run_dir}")
     return 0 if ok else 1
 

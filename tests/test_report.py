@@ -1,0 +1,42 @@
+import json
+
+from endfield import report
+
+
+def _ev(ts, kind, entry):
+    return (f'[2026-10-23 {ts}.000][INF][Px1][Tx1][EventDispatcher.hpp][L65][x] !!!OnEventNotify!!! '
+            f'[handle=true] [msg=Tasker.Task.{kind}] [details={{"entry":"{entry}","hash":"h"}}]')
+
+
+def _node(ts, name):
+    return (f'[2026-10-23 {ts}.000][INF][Px1][Tx1][EventDispatcher.hpp][L65][x] !!!OnEventNotify!!! '
+            f'[handle=true] [msg=Node.PipelineNode.Succeeded] [details={{"focus":null,"name":"{name}"}}]')
+
+
+def _agent(ts, **fields):
+    return json.dumps({"level": "info", "time": f"2026-10-23T{ts}-07:00", **fields})
+
+
+def test_flags_credit_overflow_and_game_restart(tmp_path):
+    (tmp_path / "maafw.log").write_text("\n".join([
+        _ev("10:00:00", "Starting", "OpenGame"),
+        _node("10:01:30", "StuckRepairAction"),
+        _ev("10:02:00", "Succeeded", "OpenGame"),
+        _ev("10:02:00", "Starting", "CreditShoppingMain"),
+        _ev("10:03:00", "Succeeded", "CreditShoppingMain"),
+        _ev("10:03:00", "Starting", "DijiangRewards"),
+        _ev("10:04:00", "Failed", "DijiangRewards"),
+    ]))
+    (tmp_path / "go-service.log").write_text("\n".join([
+        _agent("10:02:30", component="ExpressionRecognition",
+               values={"CreditShoppingReserveCreditOCRInternal": 810}),
+        _agent("10:03:30", component="AddItemData", item_id="item_spaceship_credit",
+               item_name="Credits", delta=120),
+    ]))
+    tasks, problems = report.build(tmp_path)
+    assert [t.entry for t in tasks] == ["OpenGame", "CreditShoppingMain", "DijiangRewards"]
+    assert tasks[0].seconds == 120
+    assert "DijiangRewards failed" in problems
+    assert any("930/300" in p for p in problems)
+    assert any("force-restarted" in p for p in problems)
+    assert "120× Credits" in report.render(tmp_path)

@@ -99,3 +99,15 @@ presets:
         ClueStockLimit: "2"
         QuickGiveDuplicateClues: "Yes"
         SelectToGrow: GrowAgain
+    - task: DailyRewards             # again: the tasks above finish daily missions, so more activity rewards unlock
+      options:
+        DailyEmailRewards: "Yes"
+        DailyTaskRewards: "Yes"
+        DailyTaskUpgradeWeapon: "No"
+        DailyTaskCreation: "No"
+        DailyTaskAssemble: "No"
+        DailyTaskLevelUpOperator: "No"
+        DailyClaimDeliveryJobsRewards: "Yes"
+        DailyEventRewards: "Yes"
+        DailyProtocolPassRewards: "Yes"
+        DailyActivityFullWarning: "Yes"

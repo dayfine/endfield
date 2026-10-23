@@ -10,6 +10,8 @@ import os
 import re
 import shutil
 import subprocess
+import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -153,6 +155,23 @@ def _shims(run_dir: Path) -> Path:
 _TASK_EVENT = re.compile(rb"msg=Tasker\.Task\.(Succeeded|Failed)\] \[details=\{\"entry\":\"([^\"]+)\"")
 
 
+def _shoot_task_ends(cfg: Config, log: Path, shots: Path, stop: threading.Event) -> None:
+    """Screenshot the phone each time a task finishes, so a run can be checked afterwards
+    against what each task was supposed to leave on screen."""
+    shots.mkdir(exist_ok=True)
+    done = 0
+    while not stop.wait(1.0):
+        # maafw.log rotates to maafw.bak.<time>.log mid-run; count events across all parts.
+        parts = sorted(log.parent.glob("maafw.bak.*.log")) + ([log] if log.exists() else [])
+        found = [e for part in parts for e in _TASK_EVENT.findall(part.read_bytes())]
+        for result, entry in found[done:]:
+            done += 1
+            png = subprocess.run([cfg.adb, "-s", cfg.serial, "exec-out", "screencap", "-p"],
+                                 capture_output=True, timeout=30).stdout
+            if png.startswith(b"\x89PNG"):
+                (shots / f"{done:02d}-{entry.decode()}-{result.decode()}.png").write_bytes(png)
+
+
 def task_results(maafw_log: bytes) -> list[tuple[str, bool]]:
     """(entry, succeeded) for each finished task, in order, from maafw.log."""
     return [(e.decode(), r == b"Succeeded") for r, e in _TASK_EVENT.findall(maafw_log)]
@@ -188,6 +207,9 @@ def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) ->
         "PATH": os.pathsep.join([str(_shims(run_dir)), str(Path(cfg.adb).parent), os.environ["PATH"]]),
     }
     out_path = run_dir / "maapicli.log"
+    stop = threading.Event()
+    shooter = threading.Thread(target=_shoot_task_ends, args=(cfg, log, run_dir / "shots", stop), daemon=True)
+    shooter.start()
     with out_path.open("wb") as out:
         try:
             code = subprocess.run(
@@ -202,6 +224,9 @@ def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) ->
         except subprocess.TimeoutExpired:
             out.write(f"\n### endfield: timed out after {timeout:.0f}s ###\n".encode())
             code = -1
+    time.sleep(2)  # let the last task's screenshot land
+    stop.set()
+    shooter.join(timeout=35)
     if agent_log.exists():
         shutil.copy(agent_log, run_dir / "go-service.log")
     if not log.exists():
