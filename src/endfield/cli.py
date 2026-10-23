@@ -2,7 +2,7 @@ import argparse
 import datetime as dt
 from pathlib import Path
 
-from endfield import ROOT, config, intel, oem, pi, vendor
+from endfield import ROOT, config, intel, oem, pi, vendor, weapons
 from endfield.device import Device
 
 
@@ -120,6 +120,32 @@ def cmd_intel(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_weapons(args: argparse.Namespace) -> int:
+    cfg = config.load()
+    dev = Device(cfg)
+    if not dev.is_connected():
+        print(f"device {cfg.serial} not connected")
+        return 1
+    dev.shell("input keyevent KEYCODE_WAKEUP")
+    if dev.is_locked():
+        print("phone is locked: unlock it, then run again")
+        return 2
+    run_dir = _run_dir()
+    with dev.stay_awake(), dev.forced_size():
+        scanner = weapons.Scanner(cfg.adb, cfg.serial, run_dir / "maa")
+        problem = scanner.check_start_screen()
+        if problem:
+            print(f"{problem}; open 貴重品庫 → 武器, sort by 品質 / 降序, then run again")
+            return 1
+        seen = scanner.scan()
+    out = weapons.write(seen, run_dir / "weapons.json")
+    rows = weapons.summarise(seen)
+    targets = [r for r in rows if weapons.is_target(r)]
+    unread = sum(1 for w in seen if not w.id)
+    print(f"{len(rows)} distinct weapons read, {len(targets)} targets, {unread} unmatched names; {out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="endfield")
     sub = parser.add_subparsers(required=True)
@@ -145,6 +171,9 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("intel", help="scan 情報檔案庫 and write a collection table (CSV)")
     p.add_argument("--no-run", action="store_true", help="only rebuild from the last run")
     p.set_defaults(func=cmd_intel)
+
+    p = sub.add_parser("weapons", help="scan owned weapons (貴重品庫 → 武器) into weapons.json")
+    p.set_defaults(func=cmd_weapons)
 
     p = sub.add_parser("screenshot", help="save a screenshot")
     p.add_argument("--out", type=Path)
