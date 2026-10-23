@@ -12,6 +12,7 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from endfield import framework
 from endfield.vendor import VENDOR
 
 WEAPON_DATA = VENDOR / "data" / "EssenceFilter" / "weapons_output.json"
@@ -100,21 +101,8 @@ def parse_equipped(text: str) -> str | None:
 
 class Scanner:
     def __init__(self, adb: str, serial: str, log_dir: Path):
-        from maa.controller import AdbController
-        from maa.resource import Resource
-        from maa.tasker import Tasker
-        from maa.toolkit import Toolkit
-
-        Toolkit.init_option(str(log_dir))
-        self.res = Resource()
-        self.res.post_bundle(str(VENDOR / "resource")).wait()
-        self.ctl = AdbController(adb, serial)
-        if not self.ctl.post_connection().wait().succeeded:
-            raise RuntimeError("MaaFramework could not connect to the device")
-        self.tasker = Tasker()
-        self.tasker.bind(self.res, self.ctl)
-        if not self.tasker.inited:
-            raise RuntimeError("MaaFramework tasker did not initialise")
+        self.tasker = framework.connect(adb, serial, log_dir, bundles=("resource",))
+        self.ctl = self.tasker.controller
 
     def screencap(self):
         return self.ctl.post_screencap().wait().get()

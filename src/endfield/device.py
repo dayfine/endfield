@@ -78,6 +78,9 @@ class Device:
         """Lock screen showing (we never try to get past it; the user unlocks)."""
         return "isKeyguardShowing=true" in self.shell("dumpsys window")
 
+    def game_in_front(self) -> bool:
+        return f"{self.cfg.package}/" in self.shell("dumpsys window | grep mCurrentFocus")
+
     def screenshot(self, path: Path) -> Path:
         png = self._adb("exec-out", "screencap", "-p", binary=True)
         if not png.startswith(b"\x89PNG"):

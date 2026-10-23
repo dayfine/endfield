@@ -25,8 +25,8 @@ presets:
         DailyEmailRewards: "Yes"
         DailyTaskRewards: "Yes"
         DailyTaskUpgradeWeapon: "No"
-        DailyTaskCreation: "No"
-        DailyTaskAssemble: "No"
+        DailyTaskCreation: "Yes"
+        DailyTaskAssemble: "Yes"
         DailyTaskLevelUpOperator: "No"
         DailyClaimDeliveryJobsRewards: "Yes"
         DailyEventRewards: "Yes"
@@ -37,17 +37,6 @@ presets:
         VisitFriendsRemark: "Yes"
         VisitFriendsPriorityRemarkEnable: "No"
         ProductionAssistControl: [ProductionAssistControlNexus, ProductionAssistMFGCabin, ProductionAssistGrowthChamber]
-    - task: CreditShoppingN2         # 信用點購物: only 武庫配額 + 嵌晶玉
-      options:
-        CreditShoppingReserve: {ReserveCreditThreshold: "300"}
-        CreditShoppingPriority1: "Yes"
-        CreditShoppingPriority1AutoGetCredits: "Yes"
-        CreditShoppingPriority1UnconditionalPurchase: "Yes"
-        CreditShoppingPriority1Items: [ArsenalTicket, Oroberyl]
-        CreditShoppingPriority1DiscountValue: Any
-        CreditShoppingPriority2: "No"
-        CreditShoppingPriority3: "No"
-        CreditShoppingForce: Exit
     - task: DeliveryJobs             # 轉交委託: 武陵, always hand over
       options:
         ValleyIV: "No"
@@ -99,13 +88,29 @@ presets:
         ClueStockLimit: "2"
         QuickGiveDuplicateClues: "Yes"
         SelectToGrow: GrowAgain
+    # After DijiangRewards so the credits it hands out are spent the same day.
+    - task: CreditShoppingN2         # 信用點購物: 武庫配額 + 嵌晶玉; refresh for them, then buy anything down to 300
+      options:
+        CreditShoppingReserve: {ReserveCreditThreshold: "300"}
+        CreditShoppingPriority1: "Yes"
+        CreditShoppingPriority1AutoGetCredits: "Yes"
+        CreditShoppingPriority1UnconditionalPurchase: "Yes"
+        CreditShoppingPriority1Items: [ArsenalTicket, Oroberyl]
+        CreditShoppingPriority1DiscountValue: Any
+        CreditShoppingPriority2: "No"
+        CreditShoppingPriority3: "No"
+        CreditShoppingForce: Refresh
+        PrudentRefresh: "Yes"
+        PrudentRefreshThreshold:
+          PrudentRefreshThreshold: "300"
+        CreditShoppingRefreshCheckPrice: "Yes"
     - task: DailyRewards             # again: the tasks above finish daily missions, so more activity rewards unlock
       options:
         DailyEmailRewards: "Yes"
         DailyTaskRewards: "Yes"
         DailyTaskUpgradeWeapon: "No"
-        DailyTaskCreation: "No"
-        DailyTaskAssemble: "No"
+        DailyTaskCreation: "Yes"
+        DailyTaskAssemble: "Yes"
         DailyTaskLevelUpOperator: "No"
         DailyClaimDeliveryJobsRewards: "Yes"
         DailyEventRewards: "Yes"

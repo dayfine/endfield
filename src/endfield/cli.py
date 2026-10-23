@@ -1,8 +1,9 @@
 import argparse
 import datetime as dt
+import time
 from pathlib import Path
 
-from endfield import ROOT, config, intel, oem, pi, report, vendor, weapons
+from endfield import ROOT, config, framework, intel, oem, pi, report, vendor, weapons
 from endfield.device import Device
 
 
@@ -55,6 +56,18 @@ def _opt(value):
     return str(value)
 
 
+def _skip_open_if_in_world(cfg, dev: Device, tasks: list[pi.Task], run_dir: Path) -> list[pi.Task]:
+    """AndroidOpenGame only knows the title screen: with the game already in the open
+    world it waits 90s, then force-restarts the game. Skip it in that case."""
+    if not tasks or tasks[0].name != "AndroidOpenGame" or not dev.game_in_front():
+        return tasks
+    time.sleep(2)  # the forced size just changed; let the game re-layout
+    if not framework.in_world(framework.connect(cfg.adb, cfg.serial, run_dir / "precheck")):
+        return tasks
+    print("game already in the open world: skipping AndroidOpenGame")
+    return tasks[1:]
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     cfg = config.load()
     dev = Device(cfg)
@@ -91,6 +104,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         return 2
     run_dir = _run_dir()
     with dev.stay_awake(), dev.forced_size():
+        tasks = _skip_open_if_in_world(cfg, dev, tasks, run_dir)
         ok = pi.run(cfg, tasks, run_dir)
         if not ok:
             dev.screenshot(run_dir / "failure.png")
