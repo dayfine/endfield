@@ -194,6 +194,9 @@ including on failure.
 - ✗ GiftOperator: fails at GiftOperatorSelectGiftOp (picking the operator).
 - ~ DijiangRewards: passes, but only 快速收取 ran; clue exchange, clue gifting and
   再次種植 did not start. Check whether StageTaskSetting/FastCollect ends the task early.
+- ? CreditShoppingN2 (2026-10-22, user report): credits were not spent. The task passes,
+  but it may only buy 武庫配額 and 嵌晶玉 (Priority2/3 off, keep 300 in reserve), or it may
+  not buy at all. The user is checking in game. Decide whether to fill Priority2/3.
 - Not done yet: full end-to-end run, end-of-run summary, launchd watcher + notifications.
 
 - Preset `daily`: start game → DailyRewards → mail/pass → shops → AutoEssence with N
