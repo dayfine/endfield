@@ -1,0 +1,21 @@
+{
+    // EssenceFilter picks the skill-name language by OCR on the wishlist/leave button.
+    // On the phone that read misses (seen: only "Y"), it falls back to CN, and TC skill
+    // names such as 醫療 then fail to resolve. This client is always TC: hit TC directly
+    // and never let the other languages match.
+    "__EssenceFilterDetectLangTC": {
+        "recognition": { "type": "DirectHit" }
+    },
+    "__EssenceFilterDetectLangCN": {
+        "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } }
+    },
+    "__EssenceFilterDetectLangEN": {
+        "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } }
+    },
+    "__EssenceFilterDetectLangJP": {
+        "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } }
+    },
+    "__EssenceFilterDetectLangKR": {
+        "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } }
+    }
+}
