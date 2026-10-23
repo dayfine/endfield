@@ -16,8 +16,12 @@ from endfield.vendor import VENDOR
 DATA = VENDOR / "data" / "EssenceFilter"
 LOCATION_DIR = VENDOR / "tasks" / "AutoEssence" / "Location"
 LOCALE = VENDOR / "locales" / "interface" / "zh_tw.json"
+# Phone-layout fixes both commands load first.
+COMMON_LAYER = ROOT / "resources" / "essence_common"
 # Resource layer for `essence go`: never claims, discards or starts the challenge.
 STOP_LAYER = ROOT / "resources" / "essence_go"
+# Resource layer for `essence farm`: one round (run off, wait, claim), ends on the loot screen.
+FARM_LAYER = ROOT / "resources" / "essence_farm"
 
 
 def _locale() -> dict[str, str]:
@@ -143,8 +147,10 @@ def fill_base(base: tuple[str, ...]) -> list[str]:
     return out
 
 
-def go_task(step: Step) -> pi.Task:
-    """AutoEssence in Location mode; with STOP_LAYER it ends on the 開啟挑戰 screen."""
+def go_task(step: Step, claim: bool = False) -> pi.Task:
+    """AutoEssence in Location mode. With STOP_LAYER it ends on the 開啟挑戰 screen; with
+    FARM_LAYER and claim=True it claims at single scaling using a 刻寫券 (80 理智), never
+    using 理智 medicine."""
     return pi.Task("AutoEssence", {
         "AutoEssenceSchedule": [f"AutoEssenceSchedule{d}" for d in
                                 ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")],
@@ -153,7 +159,7 @@ def go_task(step: Step) -> pi.Task:
         "AutoEssenceLocationSlot1": fill_base(step.base),
         f"AutoEssenceLocationSecondary_{step.location}": step.lock,
         "AutoEssenceObtainModeClaimOnly": "ObtainScaling1",
-        "AutoEssenceDoOverride": "No",
+        "AutoEssenceDoOverride": "Yes" if claim else "No",
         "AutoUseSpMedication": "EndTask",
         "EssenceFilterAfterBattle": "No",
         "AutoEssenceRepeatCount": {"AutoEssenceRepeatCountValue": "1"},

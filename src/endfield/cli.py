@@ -1,5 +1,6 @@
 import argparse
 import datetime as dt
+import re
 import time
 from pathlib import Path
 
@@ -213,10 +214,52 @@ def cmd_essence_go(args: argparse.Namespace) -> int:
     run_dir = _run_dir()
     with dev.stay_awake(), dev.forced_size():
         tasks = _skip_open_if_in_game(cfg, dev, tasks, run_dir)
-        ok = pi.run(cfg, tasks, run_dir, extra_layers=(essence.STOP_LAYER,))
+        ok = pi.run(cfg, tasks, run_dir, extra_layers=(essence.COMMON_LAYER, essence.STOP_LAYER))
     print(report.render(run_dir) if (run_dir / "maafw.log").exists() else "")
     print("ready: start the challenge yourself" if ok else f"failed: logs in {run_dir}")
     return 0 if ok else 1
+
+
+def cmd_essence_farm(args: argparse.Namespace) -> int:
+    """Farm a plan step: per round run off, wait for the turrets, claim (80 理智 + 1 刻寫券),
+    and stop on the loot screen so it can be checked. Never uses 理智 medicine."""
+    cfg = config.load()
+    steps = _essence_steps(cfg)
+    if not 1 <= args.step <= len(steps):
+        print(f"step must be 1..{len(steps)} (see endfield essence plan)")
+        return 1
+    step = steps[args.step - 1]
+    print(f"farming: {essence.describe(step)}, up to {args.rounds} round(s)")
+    dev = Device(cfg)
+    if not dev.is_connected():
+        print(f"device {cfg.serial} not connected")
+        return 1
+    dev.shell("input keyevent KEYCODE_WAKEUP")
+    if dev.is_locked():
+        print("phone is locked: unlock it, then run again")
+        return 2
+    task = essence.go_task(step, claim=True)
+    problems = pi.validate([task])
+    if problems:
+        print("config problems:\n  " + "\n  ".join(problems))
+        return 1
+    with dev.stay_awake(), dev.forced_size():
+        for n in range(1, args.rounds + 1):
+            run_dir = _run_dir()
+            ok = pi.run(cfg, [task], run_dir, extra_layers=(essence.COMMON_LAYER, essence.FARM_LAYER))
+            log = (run_dir / "maafw.log").read_bytes() if (run_dir / "maafw.log").exists() else b""
+            loot = dev.screenshot(run_dir / "loot.png")
+            if re.search(rb'msg=Node\.PipelineNode\.Succeeded\].*"name":"AutoEssenceLowSp"', log):
+                print(f"round {n}: not enough 理智, stopping ({run_dir})")
+                return 0
+            if not ok:
+                print(f"round {n}: failed, logs in {run_dir}")
+                return 1
+            print(f"round {n}: claimed, loot screen saved to {loot}")
+            if n < args.rounds:
+                tasker = framework.connect(cfg.adb, cfg.serial, run_dir / "close")
+                tasker.post_task("AutoEssenceCloseObtainDialog", {"AutoEssenceCloseObtainDialog": {"next": []}}).wait()
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -255,6 +298,11 @@ def main(argv: list[str] | None = None) -> int:
     p = ess.add_parser("go", help="teleport to a plan step and set 預刻寫, stop before the challenge")
     p.add_argument("step", type=int)
     p.set_defaults(func=cmd_essence_go)
+
+    p = ess.add_parser("farm", help="farm a plan step: run off, wait, claim; stop on the loot screen")
+    p.add_argument("step", type=int)
+    p.add_argument("--rounds", type=int, default=1, help="claims to make at most (80 理智 each)")
+    p.set_defaults(func=cmd_essence_farm)
 
     p = sub.add_parser("screenshot", help="save a screenshot")
     p.add_argument("--out", type=Path)
