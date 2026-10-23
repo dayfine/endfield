@@ -28,7 +28,7 @@ LINKED = ["resource", "resource_adb", "tasks", "locales", "agent", "data"]
 SKIP_IMPORTS = {"tasks/setting/Keymap.json"}
 
 
-def interface() -> dict:
+def interface(extra_layers: tuple[Path, ...] = ()) -> dict:
     data = jsonc.load(VENDOR / "interface.json")
     data["import"] = [p for p in data["import"] if p not in SKIP_IMPORTS]
     # Don't pass MaaEnd's Sentry DSN on to agents; our runs shouldn't report to it.
@@ -41,11 +41,12 @@ def interface() -> dict:
                 *ctrl["attach_resource_path"],
                 str(overrides.LAYER),
                 str(OUR_LAYER),
+                *map(str, extra_layers),
             ]
     return data
 
 
-def prepare() -> Path:
+def prepare(extra_layers: tuple[Path, ...] = ()) -> Path:
     overrides.build()
     for name in LINKED:
         link = PI_DIR / name
@@ -56,7 +57,7 @@ def prepare() -> Path:
     if not self_link.is_symlink():
         self_link.symlink_to(".")
     (PI_DIR / "interface.json").write_text(
-        json.dumps(interface(), ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(interface(extra_layers), ensure_ascii=False, indent=2), encoding="utf-8"
     )
     return PI_DIR
 
@@ -177,14 +178,15 @@ def task_results(maafw_log: bytes) -> list[tuple[str, bool]]:
     return [(e.decode(), r == b"Succeeded") for r, e in _TASK_EVENT.findall(maafw_log)]
 
 
-def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600) -> bool:
+def run(cfg: Config, tasks: list[Task], run_dir: Path, timeout: float = 3600,
+        extra_layers: tuple[Path, ...] = ()) -> bool:
     """Run tasks with `MaaPiCli -d`; logs go to run_dir. Returns True on success.
 
     MaaPiCli's exit code can't be trusted (its signal handler exits 0, even on a crash),
     and it prints "All tasks have been completed" even when a task failed. Success means
     maafw.log has a Tasker.Task.Succeeded event for every task and no Failed event.
     """
-    prepare()
+    prepare(extra_layers)
     conf = PI_DIR / "config" / "maa_pi_config.json"
     conf.parent.mkdir(exist_ok=True)
     conf.write_text(

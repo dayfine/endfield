@@ -15,6 +15,8 @@ class Config:
     client_version: str  # MaaEnd ClientVersion case: CN, Bilibili, Global, VN
     # preset name -> [{"task": name, "options": {option: value}}]
     presets: dict = field(default_factory=dict)
+    # Weapons (TC names) to farm essences for, for `endfield essence plan/go`.
+    essence_farm: tuple[str, ...] = ()
 
 
 def load(path: Path | None = None) -> Config:
@@ -29,4 +31,5 @@ def load(path: Path | None = None) -> Config:
         force_size=raw.get("force_size"),
         client_version=raw.get("client_version", "Global"),
         presets=raw.get("presets") or {},
+        essence_farm=tuple(raw.get("essence_farm") or ()),
     )

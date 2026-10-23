@@ -3,7 +3,7 @@ import datetime as dt
 import time
 from pathlib import Path
 
-from endfield import ROOT, config, framework, intel, oem, pi, report, vendor, weapons
+from endfield import ROOT, config, essence, framework, intel, oem, pi, report, vendor, weapons
 from endfield.device import Device
 
 
@@ -163,6 +163,60 @@ def cmd_weapons(args: argparse.Namespace) -> int:
     return 0
 
 
+def _essence_steps(cfg) -> list[essence.Step]:
+    if not cfg.essence_farm:
+        raise SystemExit("set essence_farm (weapon names) in config.yaml")
+    return essence.plan(list(cfg.essence_farm))
+
+
+def cmd_essence_plan(args: argparse.Namespace) -> int:
+    cfg = config.load()
+    names = list(cfg.essence_farm)
+    steps = _essence_steps(cfg)
+    scan = essence.latest_scan()
+    print(f"progress (weapon scan {scan.parent.name if scan else 'none'}):")
+    for name, state in essence.progress(names, scan).items():
+        print(f"  {name}: {state}")
+    print("\nplan (endfield essence go N):")
+    for i, step in enumerate(steps, 1):
+        print(f"  {i}. {essence.describe(step)}")
+    for name in essence.unreachable(names, steps):
+        print(f"  no location offers both of {name}'s secondary skills")
+    return 0
+
+
+def cmd_essence_go(args: argparse.Namespace) -> int:
+    """Teleport to a plan step's deposit and set 預刻寫, stopping on 開啟挑戰."""
+    cfg = config.load()
+    steps = _essence_steps(cfg)
+    if not 1 <= args.step <= len(steps):
+        print(f"step must be 1..{len(steps)} (see endfield essence plan)")
+        return 1
+    step = steps[args.step - 1]
+    print(f"going to: {essence.describe(step)}")
+    open_game = pi.Task("AndroidOpenGame", {"ClientVersion": cfg.client_version})
+    tasks = [open_game, essence.go_task(step)]
+    problems = pi.validate(tasks)
+    if problems:
+        print("config problems:\n  " + "\n  ".join(problems))
+        return 1
+    dev = Device(cfg)
+    if not dev.is_connected():
+        print(f"device {cfg.serial} not connected")
+        return 1
+    dev.shell("input keyevent KEYCODE_WAKEUP")
+    if dev.is_locked():
+        print("phone is locked: unlock it, then run again")
+        return 2
+    run_dir = _run_dir()
+    with dev.stay_awake(), dev.forced_size():
+        tasks = _skip_open_if_in_world(cfg, dev, tasks, run_dir)
+        ok = pi.run(cfg, tasks, run_dir, extra_layers=(essence.STOP_LAYER,))
+    print(report.render(run_dir) if (run_dir / "maafw.log").exists() else "")
+    print("ready: start the challenge yourself" if ok else f"failed: logs in {run_dir}")
+    return 0 if ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="endfield")
     sub = parser.add_subparsers(required=True)
@@ -192,6 +246,13 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("weapons", help="scan owned weapons (貴重品庫 → 武器) into weapons.json")
     p.add_argument("--pages", type=int, default=60, help="stop after this many screens")
     p.set_defaults(func=cmd_weapons)
+
+    ess = sub.add_parser("essence", help="essence farming plan and travel").add_subparsers(required=True)
+    p = ess.add_parser("plan", help="progress per weapon and the 預刻寫 plan")
+    p.set_defaults(func=cmd_essence_plan)
+    p = ess.add_parser("go", help="teleport to a plan step and set 預刻寫, stop before the challenge")
+    p.add_argument("step", type=int)
+    p.set_defaults(func=cmd_essence_go)
 
     p = sub.add_parser("screenshot", help="save a screenshot")
     p.add_argument("--out", type=Path)
