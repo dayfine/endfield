@@ -8,5 +8,26 @@
     "AutoEssenceClickEssenceStartButton": { "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } } },
     "AutoEssenceClickObtainButton": { "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } } },
     "AutoEssenceClickDiscardButton": { "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } } },
-    "AutoEssenceConfirmObtain": { "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } } }
+    "AutoEssenceConfirmObtain": { "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } } },
+    // On the phone layout the 技能屬性 (s3_*) rows sit below the visible part of the
+    // 預刻寫屬性 list and MaaEnd doesn't scroll, so a skill lock never matched. Scroll the
+    // list (left panel) and look again, up to 3 times.
+    "AutoEssenceSelectEngraveBase_s1_5": {
+        "next": ["AutoEssenceSelectEngraveBonusCondition", "EndfieldEngraveScrollToSkills"]
+    },
+    "EndfieldEngraveScrollToSkills": {
+        "desc": "scroll the 預刻寫 attribute list down to the skill rows",
+        "recognition": { "type": "DirectHit" },
+        "action": { "type": "Swipe", "param": { "begin": [480, 560, 10, 10], "end": [480, 260, 10, 10], "duration": 800 } },
+        "post_delay": 1000,
+        "max_hit": 3,
+        "next": ["AutoEssenceSelectEngraveBonusCondition", "EndfieldEngraveScrollToSkills"]
+    },
+    // A confirm tap right after picking the skill lands during the selection animation and
+    // is dropped (seen 2026-10-23). Wait first, and tap again while still on the page.
+    "AutoEssenceConfirmEngraveSelection": {
+        "pre_delay": 1000,
+        "max_hit": 3,
+        "next": ["AutoEssenceEngraveConditionsMatched", "AutoEssenceConfirmEngraveSelection"]
+    }
 }

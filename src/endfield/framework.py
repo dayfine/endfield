@@ -28,7 +28,7 @@ def connect(adb: str, serial: str, log_dir: Path, bundles=("resource", "resource
     return tasker
 
 
-def in_world(tasker) -> bool:
-    """MaaEnd's InWorld node: the open-world HUD is on screen."""
-    job = tasker.post_task("InWorld", {"InWorld": {"timeout": 3000}}).wait()
+def at_title(tasker) -> bool:
+    """MaaEnd's EnterGameOCR: the title screen's 「按下任意位置繼續」."""
+    job = tasker.post_task("EnterGameOCR", {"EnterGameOCR": {"timeout": 3000}}).wait()
     return job.get().status.succeeded

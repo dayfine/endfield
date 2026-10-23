@@ -56,15 +56,17 @@ def _opt(value):
     return str(value)
 
 
-def _skip_open_if_in_world(cfg, dev: Device, tasks: list[pi.Task], run_dir: Path) -> list[pi.Task]:
-    """AndroidOpenGame only knows the title screen: with the game already in the open
-    world it waits 90s, then force-restarts the game. Skip it in that case."""
+def _skip_open_if_in_game(cfg, dev: Device, tasks: list[pi.Task], run_dir: Path) -> list[pi.Task]:
+    """AndroidOpenGame only knows the title screen: with the game open anywhere past it (open
+    world or a menu) it waits 90s, then force-restarts the game. Skip it in that case; the
+    tasks navigate from any in-game screen."""
     if not tasks or tasks[0].name != "AndroidOpenGame" or not dev.game_in_front():
         return tasks
     time.sleep(2)  # the forced size just changed; let the game re-layout
-    if not framework.in_world(framework.connect(cfg.adb, cfg.serial, run_dir / "precheck")):
+    tasker = framework.connect(cfg.adb, cfg.serial, run_dir / "precheck")
+    if framework.at_title(tasker):
         return tasks
-    print("game already in the open world: skipping AndroidOpenGame")
+    print("game already open past the title screen: skipping AndroidOpenGame")
     return tasks[1:]
 
 
@@ -104,7 +106,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         return 2
     run_dir = _run_dir()
     with dev.stay_awake(), dev.forced_size():
-        tasks = _skip_open_if_in_world(cfg, dev, tasks, run_dir)
+        tasks = _skip_open_if_in_game(cfg, dev, tasks, run_dir)
         ok = pi.run(cfg, tasks, run_dir)
         if not ok:
             dev.screenshot(run_dir / "failure.png")
@@ -210,7 +212,7 @@ def cmd_essence_go(args: argparse.Namespace) -> int:
         return 2
     run_dir = _run_dir()
     with dev.stay_awake(), dev.forced_size():
-        tasks = _skip_open_if_in_world(cfg, dev, tasks, run_dir)
+        tasks = _skip_open_if_in_game(cfg, dev, tasks, run_dir)
         ok = pi.run(cfg, tasks, run_dir, extra_layers=(essence.STOP_LAYER,))
     print(report.render(run_dir) if (run_dir / "maafw.log").exists() else "")
     print("ready: start the challenge yourself" if ok else f"failed: logs in {run_dir}")
