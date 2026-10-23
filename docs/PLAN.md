@@ -186,6 +186,16 @@ including on failure.
   `### All tasks have been completed ###` in the output. Runs time out after 1 hour.
 
 ### Phase 2 — daily routine
+
+**Bring-up status (2026-10-22), `endfield run --preset daily --only <Task>`:**
+- ✓ AndroidOpenGame, DailyRewards, VisitFriends, CreditShoppingN2, DeliveryJobs (uses the
+  new quick hand-over), SellProduct (never switches goods), AutoStockpile (bought cheapest
+  via 防溢出), EnvironmentMonitoring (all 4 photos), AutoEcoFarm (reached both maps).
+- ✗ GiftOperator: fails at GiftOperatorSelectGiftOp (picking the operator).
+- ~ DijiangRewards: passes, but only 快速收取 ran; clue exchange, clue gifting and
+  再次種植 did not start. Check whether StageTaskSetting/FastCollect ends the task early.
+- Not done yet: full end-to-end run, end-of-run summary, launchd watcher + notifications.
+
 - Preset `daily`: start game → DailyRewards → mail/pass → shops → AutoEssence with N
   runs (spend 理智) → EssenceFilter after battle (lock matches, never auto-discard at first).
 - Check every step on the TC client; add TC-specific overrides where OCR or templates fail.
