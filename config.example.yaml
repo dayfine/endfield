@@ -1,0 +1,122 @@
+# Copy to config.yaml and edit.
+adb: /Users/difan/Downloads/scrcpy-macos-aarch64-v3.3.3/adb
+serial: 5A060DLCR002CU
+package: com.gryphline.endfield.gp
+client_version: Global  # MaaEnd ClientVersion: CN, Bilibili, Global, VN
+
+# MaaEnd needs a 16:9 screen. Forced at the start of a run, reset at the end.
+# Set to null for a device that is already 16:9.
+force_size: 720x1280
+
+# Weapons the essence tracker works toward: every owned 6★, plus 5★ that are equipped or
+# above Lv 1.
+essence_targets:
+  six_star: all_owned
+  five_star: equipped_or_leveled
+
+# Weapons (TC names) to farm essences for: `endfield essence plan` shows progress from the
+# latest `endfield weapons` scan and a 預刻寫 plan; `endfield essence go N` travels there.
+essence_farm: [悼亡詩, 莫奈何, 典範]
+
+# Task presets for `endfield run --preset NAME`. Tasks run in order. Options use MaaEnd's
+# option and case names (labels: docs/maaend_tasks_zh_tw.csv); unlisted options keep
+# MaaEnd's defaults. Agreed with the user 2026-10-22: no 理智 spending.
+presets:
+  daily:
+    - task: AndroidOpenGame          # ClientVersion comes from client_version above
+    - task: DailyRewards             # 日常獎勵領取
+      options:
+        DailyEmailRewards: "Yes"
+        DailyTaskRewards: "Yes"
+        DailyTaskUpgradeWeapon: "No"
+        DailyTaskCreation: "Yes"
+        DailyTaskAssemble: "Yes"
+        DailyTaskLevelUpOperator: "No"
+        DailyClaimDeliveryJobsRewards: "Yes"
+        DailyEventRewards: "Yes"
+        DailyProtocolPassRewards: "Yes"
+        DailyActivityFullWarning: "Yes"
+    - task: VisitFriends             # 拜訪好友
+      options:
+        VisitFriendsRemark: "Yes"
+        VisitFriendsPriorityRemarkEnable: "No"
+        ProductionAssistControl: [ProductionAssistControlNexus, ProductionAssistMFGCabin, ProductionAssistGrowthChamber]
+    - task: DeliveryJobs             # 轉交委託: 武陵, always hand over
+      options:
+        ValleyIV: "No"
+        Wuling: "Yes"
+        WulingCity: Transfer
+        TestArea: Transfer
+        PackCargoSelectItem: "No"
+        DeliveryJobsAutoDeliveryPreferZipline: "No"
+        DeliveryJobsOngoingDeliveryFallback: "No"
+    - task: SellProduct              # 據點交易: all outposts, as configured in game
+      options:
+        SellProductSchedule: [SellProductScheduleMonday, SellProductScheduleTuesday, SellProductScheduleWednesday, SellProductScheduleThursday, SellProductScheduleFriday, SellProductScheduleSaturday, SellProductScheduleSunday]
+        SellProductOperatorAutoSwitch: "No"
+        SellProductPriorityRules: "No"
+        SellProductItemReserveRules: "No"
+        ValleyIVSell: "Yes"
+        WulingSell: "Yes"
+    - task: AutoStockpile            # 自動囤貨: buy only, 武陵
+      options:
+        AutoStockpileServerTime: ASIA_UTC_PLUS_8
+        AutoStockpileAllowDataUpload: "No"
+        AutoStockpileElasticValleyIV: "No"
+        AutoStockpileElasticWuling: "Yes"
+        AutoStockpileMinBuy: "No"
+    - task: EnvironmentMonitoring    # 環境監測
+    - task: AutoEcoFarm              # 生態農場
+      options:
+        CollectWulingCityFarm: "Yes"
+        CollectSisPaintingFarm: "Yes"
+        CollectRanch: "Yes"
+    - task: GiftOperator             # 贈送幹員禮物: only receive
+      options:
+        StashBackpackSubTask: "Yes"
+        OnlyReceiveGift: "Yes"
+        AcceptAllGifts: "No"
+    - task: DijiangRewards           # 基建任務, last: replanting can run out of seeds
+      options:
+        AutoStartExchange: "Yes"
+        WaitExchangeBeforeStart: "Yes"
+        StageTaskSetting: "Yes"
+        FastCollect: "Yes"
+        RecoveryEmotionStage: "Yes"
+        ReceptionRoomStage: "Yes"
+        ManufacturingStage: "Yes"
+        GrowthChamberStage: "Yes"
+        ClueSetting: "Yes"
+        SendCluesDirect: "Yes"
+        ClueSend: {MaxClueSend: "3"}
+        ClueStockLimit: "2"
+        QuickGiveDuplicateClues: "Yes"
+        SelectToGrow: GrowAgain
+    # After DijiangRewards so the credits it hands out are spent the same day.
+    - task: CreditShoppingN2         # 信用點購物: 武庫配額 + 嵌晶玉; refresh for them, then buy anything down to 300
+      options:
+        CreditShoppingReserve: {ReserveCreditThreshold: "300"}
+        CreditShoppingPriority1: "Yes"
+        CreditShoppingPriority1AutoGetCredits: "Yes"
+        CreditShoppingPriority1UnconditionalPurchase: "Yes"
+        CreditShoppingPriority1Items: [ArsenalTicket, Oroberyl]
+        CreditShoppingPriority1DiscountValue: Any
+        CreditShoppingPriority2: "No"
+        CreditShoppingPriority3: "No"
+        CreditShoppingForce: Refresh
+        PrudentRefresh: "Yes"
+        PrudentRefreshThreshold:
+          PrudentRefreshThreshold: "300"
+        CreditShoppingRefreshCheckPrice: "Yes"
+    - task: DailyRewards             # again: the tasks above finish daily missions, so more activity rewards unlock
+      options:
+        DailyEmailRewards: "Yes"
+        DailyTaskRewards: "Yes"
+        DailyTaskUpgradeWeapon: "No"
+        DailyTaskCreation: "Yes"
+        DailyTaskAssemble: "Yes"
+        DailyTaskLevelUpOperator: "No"
+        DailyClaimDeliveryJobsRewards: "Yes"
+        DailyEventRewards: "Yes"
+        DailyProtocolPassRewards: "Yes"
+        DailyActivityFullWarning: "Yes"

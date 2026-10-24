@@ -1,0 +1,14 @@
+{
+    // On the phone the photo-settings panel's collapse arrow sits at y≈607, just below
+    // PC's ROI (y 350-600).
+    "EnvironmentMonitoringPhotoSettingsOpened": {
+        "roi": [0, 350, 400, 330]
+    },
+
+    // Map → 地區總覽 button: the ADB template scores 0.896 on the phone vs threshold 0.9
+    // (the next-best match elsewhere is 0.80). Shared by every task that opens the
+    // region overview from a map.
+    "__ScenePrivateMapOtherAreaEnterMapOverview": {
+        "recognition": {"type": "TemplateMatch", "param": {"green_mask": true, "roi": [-400, -200, 400, 200], "template": ["SceneManager/MapOverviewEnter.png", "SceneManager/MapOverviewEnterHover.png"], "threshold": 0.85}}
+    }
+}

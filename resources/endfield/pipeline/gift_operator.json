@@ -1,0 +1,7 @@
+{
+    // After tapping an operator who has a gift, MaaEnd identifies them by portrait
+    // (32 templates). Operators it has no template for (seen on device: the first card)
+    // stall the task. Identity only narrows the later chat-name check (GiftOperatorName,
+    // default ".*"), so when no portrait matches, continue with the selection as is.
+    "GiftOperatorSelectGiftOp": {"next": ["GiftOperatorSelect_Akekuri", "GiftOperatorSelect_Alesh", "GiftOperatorSelect_Antal", "GiftOperatorSelect_Arcane", "GiftOperatorSelect_Arclight", "GiftOperatorSelect_Ardelia", "GiftOperatorSelect_Avywenna", "GiftOperatorSelect_Camille", "GiftOperatorSelect_Catcher", "GiftOperatorSelect_ChenQianyu", "GiftOperatorSelect_DaPan", "GiftOperatorSelect_Ember", "GiftOperatorSelect_Estella", "GiftOperatorSelect_Fluorite", "GiftOperatorSelect_Gilberta", "GiftOperatorSelect_Laevatain", "GiftOperatorSelect_LastRite", "GiftOperatorSelect_Lifeng", "GiftOperatorSelect_Liino", "GiftOperatorSelect_MiFu", "GiftOperatorSelect_Perlica", "GiftOperatorSelect_Pogranichnik", "GiftOperatorSelect_Purrchena", "GiftOperatorSelect_Rossi", "GiftOperatorSelect_Snowshine", "GiftOperatorSelect_Tangtang", "GiftOperatorSelect_Typhoeus", "GiftOperatorSelect_Wulfgard", "GiftOperatorSelect_Xaihi", "GiftOperatorSelect_Yvonne", "GiftOperatorSelect_ZhuangFangyi", "GiftOperatorSelect_Si", "GiftOperatorSelectSpecifiedOpSuccess"]}
+}

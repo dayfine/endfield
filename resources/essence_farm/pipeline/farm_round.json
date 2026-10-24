@@ -1,0 +1,36 @@
+{
+    // Loaded only by `endfield essence farm`: one AutoEssence round per MaaPiCli run.
+    // For deposits our deployed turrets clear on their own: start the challenge, run off,
+    // wait, claim, and end on the loot screen so endfield can look for a match.
+
+    // Run away from the deposit instead of MaaEnd's AutoFight, then wait for the end.
+    "AutoEssenceChallengeEnter": {
+        "next": ["AutoEssenceChallengeFinished", "EndfieldEssenceRunAway"]
+    },
+    "EndfieldEssenceRunAway": {
+        "desc": "hold the ADB virtual joystick down (backwards) for 4s",
+        "recognition": { "type": "DirectHit" },
+        "action": { "type": "Swipe", "param": { "begin": [195, 551], "end": [195, 640], "duration": 100, "end_hold": 4000 } },
+        "next": ["AutoEssenceChallengeFinished", "EndfieldEssenceWait"]
+    },
+    "EndfieldEssenceWait": {
+        "desc": "wait for the turrets; give up after ~10 min",
+        "recognition": { "type": "DirectHit" },
+        "action": "DoNothing",
+        "post_delay": 2000,
+        "max_hit": 300,
+        "next": ["AutoEssenceChallengeFinished", "EndfieldEssenceWait"]
+    },
+
+    // After claiming, stop on the loot screen (don't close it).
+    "AutoEssenceConfirmObtain": {
+        "next": ["AutoEssenceLowSp", "EndfieldEssenceLootShown"]
+    },
+    "EndfieldEssenceLootShown": {
+        "desc": "loot screen is up (its close button); end the task here",
+        "pre_wait_freezes": 2000,
+        "recognition": { "type": "And", "param": { "all_of": ["AutoEssenceCloseObtainDialog"] } },
+        "action": "DoNothing",
+        "next": []
+    }
+}

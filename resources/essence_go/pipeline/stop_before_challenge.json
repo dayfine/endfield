@@ -1,0 +1,12 @@
+{
+    // Loaded only by `endfield essence go`. AutoEssence teleports to the deposit and sets
+    // 預刻寫 on the 開啟挑戰 screen; the person starts the challenge and claims (理智).
+    // End right after 預刻寫 matches, before 開啟挑戰 is clicked.
+    "AutoEssenceEngraveConditionsMatched": { "next": [] },
+    // Belt and braces: the claim options re-enable these nodes, so make them never match
+    // instead of disabling them. A leftover finished deposit must not be claimed or discarded.
+    "AutoEssenceClickEssenceStartButton": { "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } } },
+    "AutoEssenceClickObtainButton": { "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } } },
+    "AutoEssenceClickDiscardButton": { "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } } },
+    "AutoEssenceConfirmObtain": { "recognition": { "type": "OCR", "param": { "expected": ["__never__"] } } }
+}

@@ -1,0 +1,12 @@
+{
+    // Loaded only by `endfield essence scan` (EssenceFilter with ExportInventory).
+    // The slot nodes OCR the skill name and hand the result to the agent's CheckItem
+    // action. MaaEnd reads the whole 274x53 box with only_rec, which on the TC client
+    // returns "" or a wrong character for short names (夜幕 -> "" or 夜摹); one empty read
+    // sends the run to OCRFallback, which ExportInventory turns into StopTask, so no
+    // EssenceInventory.json is written. Text detection first reads them reliably
+    // (。夜幕 at 0.98). Detection also finds the level pips ("111"), so only Han text counts.
+    "EssenceFilterCheckItemSlot1": { "recognition": { "param": { "only_rec": false, "expected": ["[一-龥]"] } } },
+    "EssenceFilterCheckItemSlot2": { "recognition": { "param": { "only_rec": false, "expected": ["[一-龥]"] } } },
+    "EssenceFilterCheckItemSlot3": { "recognition": { "param": { "only_rec": false, "expected": ["[一-龥]"] } } }
+}

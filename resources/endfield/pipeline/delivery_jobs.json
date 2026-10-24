@@ -1,0 +1,9 @@
+{
+    // At the second depot node the 「下一步」 tap on the cargo-type page sometimes lands
+    // during the page transition and does nothing, and the task then waits for the fill
+    // page forever. Wait for the 下一步 button area to settle before tapping (the page animates,
+    // so a whole-screen wait never settles).
+    "DeliveryJobsSelectTypeOfGoodsToPackNextStep": {
+        "pre_wait_freezes": {"target": [980, 615, 265, 70], "time": 300, "timeout": 3000}
+    }
+}
