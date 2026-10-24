@@ -169,21 +169,27 @@ def cmd_weapons(args: argparse.Namespace) -> int:
 def _essence_steps(cfg) -> list[essence.Step]:
     if not cfg.essence_farm:
         raise SystemExit("set essence_farm (weapon names) in config.yaml")
-    return essence.plan(list(cfg.essence_farm))
+    # Weapons with a matching essence already (per the latest `essence scan`) drop out.
+    have = essence.owned(essence.latest_export())
+    return essence.plan(essence.still_needed(list(cfg.essence_farm), have))
 
 
 def cmd_essence_plan(args: argparse.Namespace) -> int:
     cfg = config.load()
     names = list(cfg.essence_farm)
     steps = _essence_steps(cfg)
-    scan = essence.latest_scan()
-    print(f"progress (weapon scan {scan.parent.name if scan else 'none'}):")
+    scan, export = essence.latest_scan(), essence.latest_export()
+    have = essence.owned(export)
+    print(f"progress (weapon scan {scan.parent.name if scan else 'none'}, "
+          f"essence scan {export.parent.name if export else 'none: run endfield essence scan'}):")
     for name, state in essence.progress(names, scan).items():
-        print(f"  {name}: {state}")
-    print("\nplan (endfield essence go N):")
+        got = have.get(name)
+        held = f"; have 無瑕基質 {' '.join('/'.join(map(str, lv)) for lv in got)}" if got else ""
+        print(f"  {name}: {state}{held}")
+    print("\nplan for weapons without a matching essence (endfield essence go N):")
     for i, step in enumerate(steps, 1):
         print(f"  {i}. {essence.describe(step)}")
-    for name in essence.unreachable(names, steps):
+    for name in essence.unreachable(essence.still_needed(names, have), steps):
         print(f"  no location offers both of {name}'s secondary skills")
     return 0
 

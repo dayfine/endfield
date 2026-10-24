@@ -114,6 +114,33 @@ def latest_scan() -> Path | None:
     return scans[-1] if scans else None
 
 
+def latest_export() -> Path | None:
+    exports = sorted((ROOT / "runs").glob("*/EssenceInventory.json"))
+    return exports[-1] if exports else None
+
+
+def owned(export: Path | None) -> dict[str, list[tuple[int, ...]]]:
+    """Weapon TC name -> levels of each 無瑕基質 we hold whose three skills match it fully,
+    from an `essence scan` export (groups of {weapon_ids, essences: [{levels, count}]})."""
+    if export is None:
+        return {}
+    cat = json.loads((DATA / "weapons_output.json").read_text(encoding="utf-8"))
+    out: dict[str, list[tuple[int, ...]]] = {}
+    for group in json.loads(export.read_text(encoding="utf-8")):
+        levels = [tuple(e["levels"]) for e in group["essences"] for _ in range(e.get("count", 1))]
+        for wid in group["weapon_ids"]:
+            name = cat[wid]["names"]["TC"] if wid in cat else wid
+            out.setdefault(name, []).extend(levels)
+    for v in out.values():
+        v.sort(reverse=True)
+    return out
+
+
+def still_needed(names: list[str], have: dict[str, list]) -> list[str]:
+    """Weapons we hold no matching 無瑕基質 for yet: the ones worth farming."""
+    return [n for n in names if not have.get(n)]
+
+
 def progress(names: list[str], scan: Path | None) -> dict[str, str]:
     """Weapon -> "gap" text from the latest weapon scan (levels still missing per skill)."""
     rows = {}
