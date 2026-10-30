@@ -38,7 +38,9 @@ uv run endfield essence farm 1 --rounds 3   # run off, wait, claim; 80 理智 pe
 ```
 
 `plan` reads the newest `weapons.json` and `EssenceInventory.json` under `runs/`, so
-rerun `weapons` / `essence scan` when those change.
+rerun `weapons` / `essence scan` when those change. Each `plan` saves itself to
+`runs/essence_plan.json`, and the next plan only removes weapons from it (steps keep their
+預刻寫 and order); delete that file to plan from scratch.
 
 Other:
 

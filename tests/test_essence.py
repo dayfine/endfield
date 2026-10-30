@@ -33,3 +33,23 @@ def test_owned_essences_drop_weapons_from_the_plan(tmp_path):
     assert have["悼亡詩"] == [(6, 6, 3), (1, 2, 1)]
     assert have["扶搖"] == [(1, 1, 1), (1, 1, 1)]
     assert essence.still_needed(["悼亡詩", "扶搖", "莫奈何"], have) == ["莫奈何"]
+
+
+def test_carry_over_only_removes_weapons(tmp_path):
+    prev = essence.plan(WANT)
+    path = tmp_path / "plan.json"
+    essence.save_plan(prev, path)
+    assert essence.load_plan(path) == prev
+    done = prev[0].weapons[0]
+    steps = essence.carry_over(prev, [w for w in WANT if w != done])
+    assert [(s.location, s.base, s.lock) for s in steps] == \
+        [(s.location, s.base, s.lock) for s in prev if set(s.weapons) - {done}]
+    assert all(set(n.weapons) <= set(o.weapons) for n, o in zip(steps, [s for s in prev if set(s.weapons) - {done}]))
+    assert done not in {w for s in steps for w in s.weapons}
+
+
+def test_carry_over_plans_new_weapons_after_old_steps():
+    prev = essence.plan(WANT[:2])
+    steps = essence.carry_over(prev, WANT)
+    assert steps[:len(prev)] == prev
+    assert {w for s in steps for w in s.weapons} == set(WANT)
