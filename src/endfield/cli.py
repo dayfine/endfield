@@ -171,7 +171,9 @@ def _essence_steps(cfg) -> list[essence.Step]:
         raise SystemExit("set essence_farm (weapon names) in config.yaml")
     # Weapons with a matching essence already (per the latest `essence scan`) drop out.
     have = essence.owned(essence.latest_export())
-    return essence.plan(essence.still_needed(list(cfg.essence_farm), have))
+    needed = essence.still_needed(list(cfg.essence_farm), have)
+    prev = essence.load_plan()
+    return essence.carry_over(prev, needed) if prev is not None else essence.plan(needed)
 
 
 def cmd_essence_plan(args: argparse.Namespace) -> int:
@@ -191,6 +193,7 @@ def cmd_essence_plan(args: argparse.Namespace) -> int:
         print(f"  {i}. {essence.describe(step)}")
     for name in essence.unreachable(essence.still_needed(names, have), steps):
         print(f"  no location offers both of {name}'s secondary skills")
+    essence.save_plan(steps)
     return 0
 
 

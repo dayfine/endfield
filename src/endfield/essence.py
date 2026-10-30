@@ -5,6 +5,7 @@ takes the player to a 重度能量淤積點 with 預刻寫 set, stopping before 
 offers. A drop then matches one weapon fully with odds about 1/3 x 1/(other slot's pool).
 """
 
+import dataclasses
 import itertools
 import json
 from dataclasses import dataclass
@@ -24,6 +25,8 @@ STOP_LAYER = ROOT / "resources" / "essence_go"
 SCAN_LAYER = ROOT / "resources" / "essence_scan"
 # Resource layer for `essence farm`: one round (run off, wait, claim), ends on the loot screen.
 FARM_LAYER = ROOT / "resources" / "essence_farm"
+# The last plan `essence plan` printed; later plans only remove weapons from it.
+PLAN_FILE = ROOT / "runs" / "essence_plan.json"
 
 
 def _locale() -> dict[str, str]:
@@ -102,6 +105,33 @@ def plan(names: list[str]) -> list[Step]:
         steps.append(Step(best.location, tuple(used), best.lock, served, best.odds))
         left -= set(served)
     return steps
+
+
+def carry_over(prev: list[Step], names: list[str]) -> list[Step]:
+    """The previous plan minus weapons no longer needed, so a new plan is a subset of the
+    last one: steps keep their 預刻寫 and order, and only drop out once empty. Needed
+    weapons the old plan didn't cover (newly added to essence_farm) are planned after it."""
+    left, steps = set(names), []
+    for s in prev:
+        served = tuple(w for w in s.weapons if w in left)
+        if served:
+            steps.append(Step(s.location, s.base, s.lock, served, s.odds * len(served) / len(s.weapons)))
+            left -= set(served)
+    extra = [n for n in names if n in left]
+    return steps + (plan(extra) if extra else [])
+
+
+def load_plan(path: Path = PLAN_FILE) -> list[Step] | None:
+    if not path.exists():
+        return None
+    return [Step(s["location"], tuple(s["base"]), s["lock"], tuple(s["weapons"]), s["odds"])
+            for s in json.loads(path.read_text(encoding="utf-8"))]
+
+
+def save_plan(steps: list[Step], path: Path = PLAN_FILE) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps([dataclasses.asdict(s) for s in steps], ensure_ascii=False, indent=1) + "\n",
+                    encoding="utf-8")
 
 
 def unreachable(names: list[str], steps: list[Step]) -> list[str]:
