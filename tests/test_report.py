@@ -36,7 +36,12 @@ def test_flags_credit_overflow_and_game_restart(tmp_path):
     tasks, problems = report.build(tmp_path)
     assert [t.entry for t in tasks] == ["OpenGame", "CreditShoppingMain", "DijiangRewards"]
     assert tasks[0].seconds == 120
-    assert "DijiangRewards failed" in problems
+    assert f"{report.task_label('DijiangRewards')} 失敗" in problems
     assert any("930/300" in p for p in problems)
-    assert any("force-restarted" in p for p in problems)
-    assert "120× Credits" in report.render(tmp_path)
+    assert any("強制重啟" in p for p in problems)
+    assert f"{report.item_label('item_spaceship_credit', 'Credits')}×120" in report.render(tmp_path)
+
+
+def test_table_pads_by_display_width():
+    lines = report.table(["任務", "結果", "內容"], [["拜訪好友", "ok", "x"], ["OpenGame", "失敗", ""]])
+    assert len({report._width(line.rsplit("|", 2)[0]) for line in lines}) == 1
