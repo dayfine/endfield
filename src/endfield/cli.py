@@ -111,6 +111,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         ok = pi.run(cfg, tasks, run_dir)
         if not ok:
             dev.screenshot(run_dir / "failure.png")
+    # After stay_awake has restored the screen timeout, so the screen stays off.
+    if args.lock:
+        dev.lock()
     if (run_dir / "maafw.log").exists():
         print(report.render(run_dir))
         report.write(run_dir)
@@ -120,7 +123,8 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 def cmd_intel(args: argparse.Namespace) -> int:
     if not args.no_run:
-        code = cmd_run(argparse.Namespace(tasks=["IntelArchive"], preset=None, only=None, dry_run=False))
+        code = cmd_run(argparse.Namespace(tasks=["IntelArchive"], preset=None, only=None, dry_run=False,
+                                          lock=False))
         if code != 0:
             return code
     run_dir = sorted((ROOT / "runs").iterdir())[-1]
@@ -319,6 +323,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--preset", help="preset name in config.yaml, e.g. daily")
     p.add_argument("--only", nargs="+", metavar="TASK", help="run only these tasks of the list")
     p.add_argument("--dry-run", action="store_true", help="validate and print, don't run")
+    p.add_argument("--lock", action="store_true", help="turn the screen off when done")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("intel", help="scan 情報檔案庫 and write a collection table (CSV)")
