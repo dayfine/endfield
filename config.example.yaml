@@ -120,3 +120,4 @@ presets:
         DailyEventRewards: "Yes"
         DailyProtocolPassRewards: "Yes"
         DailyActivityFullWarning: "Yes"
+    - task: CloseGame                # last: leave the phone with the game closed

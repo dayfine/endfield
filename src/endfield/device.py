@@ -78,6 +78,10 @@ class Device:
         """Lock screen showing (we never try to get past it; the user unlocks)."""
         return "isKeyguardShowing=true" in self.shell("dumpsys window")
 
+    def lock(self) -> None:
+        """Screen off; the lock screen comes back once the phone's lock delay passes."""
+        self.shell("input keyevent KEYCODE_SLEEP")
+
     def game_in_front(self) -> bool:
         return f"{self.cfg.package}/" in self.shell("dumpsys window | grep mCurrentFocus")
 

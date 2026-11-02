@@ -18,10 +18,10 @@ command forces the screen to 720x1280 and keeps it awake, then restores both aft
 
 ## Running things by hand
 
-Daily routine (about 22 min, spends no 理智):
+Daily routine (about 22 min, spends no 理智; ends by closing the game):
 
 ```sh
-uv run endfield run --preset daily                         # whole preset from config.yaml
+uv run endfield run --preset daily --lock                  # whole preset, then screen off
 uv run endfield run --preset daily --only DijiangRewards   # just some of its tasks
 uv run endfield run --preset daily --dry-run               # check options, don't run
 uv run endfield run AndroidOpenGame                        # any MaaEnd task by name
