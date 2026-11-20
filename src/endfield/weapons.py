@@ -253,3 +253,154 @@ def write(seen: list[Weapon], out: Path) -> Path:
     }
     out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return out
+
+
+# 1616x720 native-aspect layout (2424x1080 scaled to height 720 by MaaFramework).
+ACT_DETAIL_BTN = (1433, 660)
+ACT_ESSENCE_BTN = (311, 208)
+ACT_BACK_BTN = (1560, 37)
+ACT_HEADER_ROI = (40, 10, 400, 60)
+ACT_CARD_X0 = 63
+ACT_CARD_STEP = 95
+ACT_CARD_Y = 593
+ACT_CARD_BORDER_Y = (635, 640)
+ACT_POPUP_ROI = (330, 220, 600, 230)
+
+
+def _is_gold_border(img, cx: int) -> bool:
+    """True when the essence card at `cx` has a 5★ gold bottom border (BGR)."""
+    y1, y2 = ACT_CARD_BORDER_Y
+    patch = img[y1:y2, max(0, cx - 25):min(img.shape[1], cx + 25)]
+    if patch.size == 0:
+        return False
+    b, g, r = patch.mean(axis=(0, 1))
+    return r > 180 and g > 120 and b < 80
+
+
+def _is_equipped_elsewhere(img, cx: int) -> bool:
+    """True when the essence card at `cx` has the white weapon-equipped badge in its top-right."""
+    patch = img[549:569, max(0, cx + 18):min(img.shape[1], cx + 38)]
+    if patch.size == 0:
+        return False
+    return float(patch.mean()) > 160
+
+
+def _ocr_text(tasker, img, roi: tuple[int, int, int, int]) -> str:
+    from maa.pipeline import JOCR
+
+    detail = tasker.post_recognition("OCR", JOCR(roi=roi), img).wait().get()
+    reco = tasker.get_node_detail(detail.node_id_list[0]).recognition
+    return "".join(r.text for r in sorted((r for r in reco.all_results if r.text), key=lambda r: (r.box[1], r.box[0])))
+
+
+def _check_inventory_in_activation(dev, adb: str, serial: str, name: str,
+                                   expected_skills: list[str], log_dir: Path,
+                                   force_size: str | None) -> str:
+    """Open 詳情 -> 基質 (活性化) at native resolution and check for a matching 無瑕基質."""
+    dev.shell("wm size reset")
+    time.sleep(0.8)
+    try:
+        native = framework.connect(adb, serial, log_dir / "native", bundles=("resource",))
+        ctl = native.controller
+        ctl.post_click(*ACT_DETAIL_BTN).wait()
+        time.sleep(1.0)
+        ctl.post_click(*ACT_ESSENCE_BTN).wait()
+        time.sleep(1.0)
+        img = ctl.post_screencap().wait().get()
+        if "活性化" not in _ocr_text(native, img, ACT_HEADER_ROI):
+            ctl.post_click(*ACT_ESSENCE_BTN).wait()
+            time.sleep(1.0)
+            img = ctl.post_screencap().wait().get()
+
+        status = "need_farming"
+        if "活性化" in _ocr_text(native, img, ACT_HEADER_ROI):
+            for swipe in range(3):
+                gold_xs = [ACT_CARD_X0 + i * ACT_CARD_STEP for i in range(12)
+                           if _is_gold_border(img, ACT_CARD_X0 + i * ACT_CARD_STEP)
+                           and not _is_equipped_elsewhere(img, ACT_CARD_X0 + i * ACT_CARD_STEP)]
+                for cx in gold_xs:
+                    ctl.post_click(cx, ACT_CARD_Y).wait()
+                    time.sleep(0.6)
+                    popup = _ocr_text(native, ctl.post_screencap().wait().get(), ACT_POPUP_ROI)
+                    if "無瑕基質" in popup and all(sk in popup for sk in expected_skills):
+                        status = "in_inventory"
+                        break
+                if status == "in_inventory" or gold_xs or swipe == 2:
+                    break
+                # Only 4★ purples visible so far; scroll the essence bar right.
+                ctl.post_swipe(1000, ACT_CARD_Y, 200, ACT_CARD_Y, 600).wait()
+                time.sleep(0.6)
+                img = ctl.post_screencap().wait().get()
+
+        ctl.post_click(*ACT_BACK_BTN).wait()
+        time.sleep(0.8)
+        ctl.post_click(*ACT_BACK_BTN).wait()
+        time.sleep(0.8)
+        return status
+    finally:
+        if force_size:
+            dev.shell(f"wm size {force_size}")
+            time.sleep(0.8)
+
+
+def check_essence_targets(cfg, names: list[str], run_dir: Path) -> dict[str, dict]:
+    """Scan 貴重品庫 → 武器 for `names` and check whether each has a matching 無瑕基質
+    (either already equipped, or present in its 活性化 equip-essence menu)."""
+    from endfield.device import Device
+
+    dev = Device(cfg)
+    catalog = load_catalog()
+    remaining = set(names)
+    results: dict[str, dict] = {}
+    with dev.stay_awake(), dev.forced_size():
+        scanner = Scanner(cfg.adb, cfg.serial, run_dir / "maa")
+        problem = scanner.check_start_screen()
+        if problem:
+            raise RuntimeError(f"{problem}; open 貴重品庫 → 武器, sort by 品質 / 降序, then run again")
+        scanner.to_top()
+        for page in range(60):
+            page_hits = 0
+            for y in GRID_Y:
+                for x in GRID_X:
+                    if not remaining:
+                        break
+                    scanner.tap(x, y)
+                    img = scanner.screencap()
+                    read = scanner.ocr(img, NAME_ROI)
+                    name = match_name(read, catalog)
+                    if not name:
+                        continue
+                    w = catalog[name]
+                    level = parse_level(scanner.ocr(img, LEVEL_ROI))
+                    equipped_by = parse_equipped(scanner.ocr(img, EQUIP_ROI))
+                    if _target(w["rarity"], level, equipped_by):
+                        page_hits += 1
+                    if name not in remaining:
+                        continue
+                    essence_pill = scanner.ocr(img, ESSENCE_ROI) or None
+                    if essence_pill and "無瑕基質" in essence_pill:
+                        (x1, y1), (x2, y2), ms = PANEL_SCROLL
+                        scanner.ctl.post_swipe(x1, y1, x2, y2, ms).wait()
+                        time.sleep(0.8)
+                        skills = scanner.read_skills(scanner.screencap(), SKILLS_ROI)
+                        if len(skills) == 3 and all(lvl > base for base, lvl, _ in skills):
+                            results[name] = {"status": "equipped", "essence": essence_pill,
+                                             "skills": [list(s) for s in skills]}
+                            remaining.remove(name)
+                            print(f"  {name}: equipped (無瑕基質)", flush=True)
+                            continue
+                    expected = [s.split("·")[0] for s in w["skills"]["TC"]]
+                    status = _check_inventory_in_activation(
+                        dev, cfg.adb, cfg.serial, name, expected, run_dir, cfg.force_size
+                    )
+                    results[name] = {"status": status, "essence": essence_pill}
+                    remaining.remove(name)
+                    print(f"  {name}: {status} (was {essence_pill})", flush=True)
+                if not remaining:
+                    break
+            if not remaining or page_hits == 0:
+                break
+            scanner.swipe()
+    for name in names:
+        results.setdefault(name, {"status": "not_in_scan"})
+    return results

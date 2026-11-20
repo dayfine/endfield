@@ -1,5 +1,6 @@
 import argparse
 import datetime as dt
+import json
 import re
 import time
 from pathlib import Path
@@ -186,11 +187,16 @@ def cmd_essence_plan(args: argparse.Namespace) -> int:
     steps = _essence_steps(cfg)
     scan, export = essence.latest_scan(), essence.latest_export()
     have = essence.owned(export)
+    statuses = essence.scan_statuses(export)
     print(f"progress (weapon scan {scan.parent.name if scan else 'none'}, "
           f"essence scan {export.parent.name if export else 'none: run endfield essence scan'}):")
     for name, state in essence.progress(names, scan).items():
-        got = have.get(name)
-        held = f"; have 無瑕基質 {' '.join('/'.join(map(str, lv)) for lv in got)}" if got else ""
+        if statuses:
+            st = statuses.get(name, "not in scan")
+            held = f"; {st}"
+        else:
+            got = have.get(name)
+            held = f"; have 無瑕基質 {' '.join('/'.join(map(str, lv)) for lv in got)}" if got else ""
         print(f"  {name}: {state}{held}")
     print("\nplan for weapons without a matching essence (endfield essence go N):")
     for i, step in enumerate(steps, 1):
@@ -234,12 +240,11 @@ def cmd_essence_go(args: argparse.Namespace) -> int:
 
 
 def cmd_essence_scan(args: argparse.Namespace) -> int:
-    """Export the 無瑕基質 inventory (read-only) into the run dir."""
+    """Check each essence_farm weapon in 貴重品庫 → 武器 for a matching 無瑕基質
+    (equipped or in its 活性化 equip-essence menu)."""
     cfg = config.load()
-    tasks = [pi.Task("AndroidOpenGame", {"ClientVersion": cfg.client_version}), essence.scan_task()]
-    problems = pi.validate(tasks)
-    if problems:
-        print("config problems:\n  " + "\n  ".join(problems))
+    if not cfg.essence_farm:
+        print("set essence_farm (weapon names) in config.yaml")
         return 1
     dev = Device(cfg)
     if not dev.is_connected():
@@ -250,17 +255,15 @@ def cmd_essence_scan(args: argparse.Namespace) -> int:
         print("phone is locked: unlock it, then run again")
         return 2
     run_dir = _run_dir()
-    started = time.time()
-    with dev.stay_awake(), dev.forced_size():
-        tasks = _skip_open_if_in_game(cfg, dev, tasks, run_dir)
-        ok = pi.run(cfg, tasks, run_dir, extra_layers=(essence.SCAN_LAYER,))
-    export = essence.find_export(started)
-    if export is None:
-        print(f"no EssenceInventory.json written ({'ok' if ok else 'failed'}); logs in {run_dir}")
+    try:
+        results = weapons.check_essence_targets(cfg, list(cfg.essence_farm), run_dir)
+    except RuntimeError as e:
+        print(e)
         return 1
-    out = run_dir / "EssenceInventory.json"
-    out.write_bytes(export.read_bytes())
-    print(f"essence inventory: {out}")
+    out = run_dir / "essence_scan.json"
+    out.write_text(json.dumps({"weapons": results}, ensure_ascii=False, indent=2), encoding="utf-8")
+    need = [n for n, info in results.items() if info["status"] == "need_farming"]
+    print(f"essence scan saved: {out} ({len(need)} need farming: {', '.join(need) or 'none'})")
     return 0
 
 

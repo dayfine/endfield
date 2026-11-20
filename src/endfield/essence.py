@@ -145,15 +145,33 @@ def latest_scan() -> Path | None:
 
 
 def latest_export() -> Path | None:
-    exports = sorted((ROOT / "runs").glob("*/EssenceInventory.json"))
+    exports = sorted(
+        list((ROOT / "runs").glob("*/EssenceInventory.json"))
+        + list((ROOT / "runs").glob("*/essence_scan.json")),
+        key=lambda p: p.parent.name,
+    )
     return exports[-1] if exports else None
+
+
+def scan_statuses(export: Path | None) -> dict[str, str]:
+    """Weapon TC name -> status from weapon-first `essence_scan.json`, if that is `export`."""
+    if export is None or export.name != "essence_scan.json":
+        return {}
+    data = json.loads(export.read_text(encoding="utf-8"))
+    return {name: info.get("status", "") for name, info in (data.get("weapons") or {}).items()}
 
 
 def owned(export: Path | None) -> dict[str, list[tuple[int, ...]]]:
     """Weapon TC name -> levels of each 無瑕基質 we hold whose three skills match it fully,
-    from an `essence scan` export (groups of {weapon_ids, essences: [{levels, count}]})."""
+    from `essence_scan.json` or MaaEnd's `EssenceInventory.json`."""
     if export is None:
         return {}
+    if export.name == "essence_scan.json":
+        return {
+            name: [(1, 1, 1)]
+            for name, status in scan_statuses(export).items()
+            if status in ("equipped", "in_inventory")
+        }
     cat = json.loads((DATA / "weapons_output.json").read_text(encoding="utf-8"))
     out: dict[str, list[tuple[int, ...]]] = {}
     for group in json.loads(export.read_text(encoding="utf-8")):

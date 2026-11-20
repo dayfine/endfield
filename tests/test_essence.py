@@ -53,3 +53,16 @@ def test_carry_over_plans_new_weapons_after_old_steps():
     steps = essence.carry_over(prev, WANT)
     assert steps[:len(prev)] == prev
     assert {w for s in steps for w in s.weapons} == set(WANT)
+
+
+def test_weapon_first_scan_drops_equipped_and_in_inventory(tmp_path):
+    scan = tmp_path / "essence_scan.json"
+    scan.write_text(json.dumps({
+        "weapons": {
+            "悼亡詩": {"status": "equipped"},
+            "點心時刻": {"status": "in_inventory"},
+            "莫奈何": {"status": "need_farming"},
+        }
+    }))
+    have = essence.owned(scan)
+    assert essence.still_needed(["悼亡詩", "點心時刻", "莫奈何"], have) == ["莫奈何"]
